@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🎛️ SoundMix"
+            android:textSize="28sp"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="24dp"/>
+
+        <Button
+            android:id="@+id/btnSelectAudio"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="📂 Selecionar Música"
+            android:backgroundTint="#1DB954"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:id="@+id/tvFileName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nenhum arquivo selecionado"
+            android:textColor="#AAAAAA"
+            android:gravity="center"
+            android:layout_marginBottom="24dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Faixas para incluir no mix:"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp"/>
+
+        <CheckBox android:id="@+id/cbVocals"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🎤 Vocals" android:textColor="#FFFFFF" android:checked="true"/>
+        <CheckBox android:id="@+id/cbGuitar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🎸 Guitar" android:textColor="#FFFFFF" android:checked="true"/>
+        <CheckBox android:id="@+id/cbBass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🎸 Bass" android:textColor="#FFFFFF" android:checked="true"/>
+        <CheckBox android:id="@+id/cbDrums"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🥁 Drums" android:textColor="#FFFFFF" android:checked="true"/>
+        <CheckBox android:id="@+id/cbPiano"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🎹 Piano" android:textColor="#FFFFFF" android:checked="true"/>
+        <CheckBox android:id="@+id/cbOther"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🎛️ Other" android:textColor="#FFFFFF" android:checked="true"
+            android:layout_marginBottom="24dp"/>
+
+        <Button
+            android:id="@+id/btnSeparate"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="⚡ Separar Stems"
+            android:backgroundTint="#BB86FC"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="16dp"/>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="#1DB954"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"/>
+
+        <Button
+            android:id="@+id/btnDownload"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="⬇️ Baixar Mix"
+            android:backgroundTint="#03DAC6"
+            android:textColor="#000000"
+            android:visibility="gone"/>
+
+    </LinearLayout>
+</ScrollView>
