@@ -13,7 +13,6 @@ import android.widget.CheckBox;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -124,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
                     .addFormDataPart("selected_stems", stemsJson)
                     .build();
                 Request request = new Request.Builder()
-                    .url("https://alexsales-soundmix-backend.hf.space/run/predict")
+                    .url("https://alexsales-soundmix-backend.hf.space/api/predict")
                     .post(requestBody)
                     .build();
                 OkHttpClient client = new OkHttpClient.Builder()
