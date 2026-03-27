@@ -133,13 +133,13 @@ public class MainActivity extends AppCompatActivity {
                 JSONObject body = new JSONObject();
                 body.put("data", dataArray);
                 Request request = new Request.Builder()
-                    .url(BASE_URL + "/call/predict")
+                    .url(BASE_URL + "/gradio_api/call/process")
                     .post(RequestBody.create(body.toString(), MediaType.parse("application/json")))
                     .build();
                 Response response = client.newCall(request).execute();
                 String responseStr = response.body().string();
                 if (!response.isSuccessful()) {
-                    throw new Exception("Predict falhou: " + responseStr);
+                    throw new Exception("Falhou: " + responseStr);
                 }
                 JSONObject responseJson = new JSONObject(responseStr);
                 if (!responseJson.has("event_id")) {
@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
                 String eventId = responseJson.getString("event_id");
                 runOnUiThread(() -> tvStatus.setText("Processando stems... aguarde"));
                 Request resultRequest = new Request.Builder()
-                    .url(BASE_URL + "/call/predict/" + eventId)
+                    .url(BASE_URL + "/gradio_api/call/process/" + eventId)
                     .get()
                     .build();
                 Response resultResponse = client.newCall(resultRequest).execute();
@@ -162,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
                 JSONArray resultData = new JSONArray(dataLine);
                 JSONObject audioResult = resultData.getJSONObject(0);
                 String resultUrl = audioResult.optString("url",
-                    BASE_URL + "/file=" + audioResult.optString("path",""));
+                    BASE_URL + "/gradio_api/file=" + audioResult.optString("path",""));
                 Request downloadRequest = new Request.Builder()
                     .url(resultUrl)
                     .get()
@@ -198,4 +198,3 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Erro ao salvar: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
-}
