@@ -29,19 +29,27 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.json.JSONArray;
+import org.json.JSONObject;
 public class MainActivity extends AppCompatActivity {
     private static final int PICK_AUDIO = 1;
     private static final int PERM_REQUEST = 2;
+    private static final String BASE_URL = "https://alexsales-soundmix-backend.hf.space";
     private TextView tvFileName, tvStatus;
     private Button btnSelectAudio, btnSeparate, btnDownload;
     private ProgressBar progressBar;
     private CheckBox cbVocals, cbGuitar, cbBass, cbDrums, cbPiano, cbOther;
     private Uri selectedAudioUri;
     private byte[] resultBytes;
+    private OkHttpClient client;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        client = new OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(300, TimeUnit.SECONDS)
+            .build();
         tvFileName = findViewById(R.id.tvFileName);
         tvStatus = findViewById(R.id.tvStatus);
         btnSelectAudio = findViewById(R.id.btnSelectAudio);
@@ -108,41 +116,77 @@ public class MainActivity extends AppCompatActivity {
         if (cbOther.isChecked()) stems.add("other");
         progressBar.setVisibility(View.VISIBLE);
         btnSeparate.setEnabled(false);
-        tvStatus.setText("Enviando para processamento...");
+        tvStatus.setText("Enviando audio...");
         btnDownload.setVisibility(View.GONE);
         new Thread(() -> {
             try {
+                // Passo 1: upload do audio
                 InputStream is = getContentResolver().openInputStream(selectedAudioUri);
                 byte[] audioBytes = readBytes(is);
                 is.close();
-                String stemsJson = "[\"" + String.join("\",\"", stems) + "\"]";
-                RequestBody requestBody = new MultipartBody.Builder()
+                RequestBody uploadBody = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
-                    .addFormDataPart("audio", "audio.mp3",
+                    .addFormDataPart("files", "audio.mp3",
                         RequestBody.create(audioBytes, MediaType.parse("audio/mpeg")))
-                    .addFormDataPart("selected_stems", stemsJson)
                     .build();
-                Request request = new Request.Builder()
-                    .url("https://alexsales-soundmix-backend.hf.space/api/predict")
-                    .post(requestBody)
+                Request uploadRequest = new Request.Builder()
+                    .url(BASE_URL + "/upload")
+                    .post(uploadBody)
                     .build();
-                OkHttpClient client = new OkHttpClient.Builder()
-                    .connectTimeout(60, TimeUnit.SECONDS)
-                    .readTimeout(300, TimeUnit.SECONDS)
+                Response uploadResponse = client.newCall(uploadRequest).execute();
+                String uploadBody2 = uploadResponse.body().string();
+                JSONArray uploadedFiles = new JSONArray(uploadBody2);
+                String uploadedPath = uploadedFiles.getString(0);
+                runOnUiThread(() -> tvStatus.setText("Processando stems..."));
+                // Passo 2: chamar predict
+                JSONArray stemsArray = new JSONArray(stems);
+                JSONObject audioParam = new JSONObject();
+                audioParam.put("path", uploadedPath);
+                audioParam.put("meta", new JSONObject());
+                JSONArray dataArray = new JSONArray();
+                dataArray.put(audioParam);
+                dataArray.put(stemsArray);
+                JSONObject predictBody = new JSONObject();
+                predictBody.put("data", dataArray);
+                Request predictRequest = new Request.Builder()
+                    .url(BASE_URL + "/call/predict")
+                    .post(RequestBody.create(predictBody.toString(), MediaType.parse("application/json")))
                     .build();
-                Response response = client.newCall(request).execute();
-                if (response.isSuccessful()) {
-                    resultBytes = response.body().bytes();
-                    runOnUiThread(() -> {
-                        progressBar.setVisibility(View.GONE);
-                        tvStatus.setText("Pronto! Toque em Baixar Mix.");
-                        btnDownload.setVisibility(View.VISIBLE);
-                        btnSeparate.setEnabled(true);
-                    });
-                } else {
-                    String errBody = response.body() != null ? response.body().string() : "sem detalhe";
-                    throw new Exception("HTTP " + response.code() + ": " + errBody);
+                Response predictResponse = client.newCall(predictRequest).execute();
+                String predictStr = predictResponse.body().string();
+                JSONObject predictJson = new JSONObject(predictStr);
+                String eventId = predictJson.getString("event_id");
+                // Passo 3: buscar resultado
+                runOnUiThread(() -> tvStatus.setText("Aguardando resultado..."));
+                Request resultRequest = new Request.Builder()
+                    .url(BASE_URL + "/call/predict/" + eventId)
+                    .get()
+                    .build();
+                Response resultResponse = client.newCall(resultRequest).execute();
+                String resultStr = resultResponse.body().string();
+                // Parsear SSE: "data: [...]"
+                String dataLine = "";
+                for (String line : resultStr.split("\n")) {
+                    if (line.startsWith("data: ")) {
+                        dataLine = line.substring(6);
+                    }
                 }
+                JSONArray resultData = new JSONArray(dataLine);
+                JSONObject audioResult = resultData.getJSONObject(0);
+                String resultPath = audioResult.getString("path");
+                // Passo 4: baixar o audio resultante
+                Request downloadRequest = new Request.Builder()
+                    .url(BASE_URL + "/file=" + resultPath)
+                    .get()
+                    .build();
+                Response downloadResponse = client.newCall(downloadRequest).execute();
+                resultBytes = downloadResponse.body().bytes();
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    tvStatus.setText("Pronto! Toque em Baixar Mix.");
+                    btnDownload.setVisibility(View.VISIBLE);
+                    btnSeparate.setEnabled(true);
+                });
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
