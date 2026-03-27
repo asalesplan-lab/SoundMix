@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Base64;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -24,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import okhttp3.MediaType;
-import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -116,67 +116,48 @@ public class MainActivity extends AppCompatActivity {
         if (cbOther.isChecked()) stems.add("other");
         progressBar.setVisibility(View.VISIBLE);
         btnSeparate.setEnabled(false);
-        tvStatus.setText("Enviando audio...");
+        tvStatus.setText("Lendo audio...");
         btnDownload.setVisibility(View.GONE);
         new Thread(() -> {
             try {
-                // Passo 1: upload do audio
                 InputStream is = getContentResolver().openInputStream(selectedAudioUri);
                 byte[] audioBytes = readBytes(is);
                 is.close();
-                RequestBody uploadBody = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("files", "audio.mp3",
-                        RequestBody.create(audioBytes, MediaType.parse("audio/mpeg")))
-                    .build();
-                Request uploadRequest = new Request.Builder()
-                    .url(BASE_URL + "/upload")
-                    .post(uploadBody)
-                    .build();
-                Response uploadResponse = client.newCall(uploadRequest).execute();
-                String uploadBody2 = uploadResponse.body().string();
-                JSONArray uploadedFiles = new JSONArray(uploadBody2);
-                String uploadedPath = uploadedFiles.getString(0);
-                runOnUiThread(() -> tvStatus.setText("Processando stems..."));
-                // Passo 2: chamar predict
+                String base64Audio = Base64.encodeToString(audioBytes, Base64.NO_WRAP);
+                String dataUri = "data:audio/mpeg;base64," + base64Audio;
+                runOnUiThread(() -> tvStatus.setText("Enviando para processamento..."));
                 JSONArray stemsArray = new JSONArray(stems);
-                JSONObject audioParam = new JSONObject();
-                audioParam.put("path", uploadedPath);
-                audioParam.put("meta", new JSONObject());
                 JSONArray dataArray = new JSONArray();
-                dataArray.put(audioParam);
+                dataArray.put(dataUri);
                 dataArray.put(stemsArray);
-                JSONObject predictBody = new JSONObject();
-                predictBody.put("data", dataArray);
-                Request predictRequest = new Request.Builder()
+                JSONObject body = new JSONObject();
+                body.put("data", dataArray);
+                Request request = new Request.Builder()
                     .url(BASE_URL + "/call/predict")
-                    .post(RequestBody.create(predictBody.toString(), MediaType.parse("application/json")))
+                    .post(RequestBody.create(body.toString(), MediaType.parse("application/json")))
                     .build();
-                Response predictResponse = client.newCall(predictRequest).execute();
-                String predictStr = predictResponse.body().string();
-                JSONObject predictJson = new JSONObject(predictStr);
-                String eventId = predictJson.getString("event_id");
-                // Passo 3: buscar resultado
-                runOnUiThread(() -> tvStatus.setText("Aguardando resultado..."));
+                Response response = client.newCall(request).execute();
+                String responseStr = response.body().string();
+                JSONObject responseJson = new JSONObject(responseStr);
+                String eventId = responseJson.getString("event_id");
+                runOnUiThread(() -> tvStatus.setText("Processando stems... aguarde"));
                 Request resultRequest = new Request.Builder()
                     .url(BASE_URL + "/call/predict/" + eventId)
                     .get()
                     .build();
                 Response resultResponse = client.newCall(resultRequest).execute();
                 String resultStr = resultResponse.body().string();
-                // Parsear SSE: "data: [...]"
                 String dataLine = "";
                 for (String line : resultStr.split("\n")) {
                     if (line.startsWith("data: ")) {
-                        dataLine = line.substring(6);
+                        dataLine = line.substring(6).trim();
                     }
                 }
                 JSONArray resultData = new JSONArray(dataLine);
                 JSONObject audioResult = resultData.getJSONObject(0);
-                String resultPath = audioResult.getString("path");
-                // Passo 4: baixar o audio resultante
+                String resultUrl = audioResult.getString("url");
                 Request downloadRequest = new Request.Builder()
-                    .url(BASE_URL + "/file=" + resultPath)
+                    .url(resultUrl)
                     .get()
                     .build();
                 Response downloadResponse = client.newCall(downloadRequest).execute();
