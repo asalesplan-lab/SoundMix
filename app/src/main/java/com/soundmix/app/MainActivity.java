@@ -138,7 +138,13 @@ public class MainActivity extends AppCompatActivity {
                     .build();
                 Response response = client.newCall(request).execute();
                 String responseStr = response.body().string();
+                if (!response.isSuccessful()) {
+                    throw new Exception("Predict falhou: " + responseStr);
+                }
                 JSONObject responseJson = new JSONObject(responseStr);
+                if (!responseJson.has("event_id")) {
+                    throw new Exception("Resposta: " + responseStr.substring(0, Math.min(200, responseStr.length())));
+                }
                 String eventId = responseJson.getString("event_id");
                 runOnUiThread(() -> tvStatus.setText("Processando stems... aguarde"));
                 Request resultRequest = new Request.Builder()
@@ -155,7 +161,8 @@ public class MainActivity extends AppCompatActivity {
                 }
                 JSONArray resultData = new JSONArray(dataLine);
                 JSONObject audioResult = resultData.getJSONObject(0);
-                String resultUrl = audioResult.getString("url");
+                String resultUrl = audioResult.optString("url",
+                    BASE_URL + "/file=" + audioResult.optString("path",""));
                 Request downloadRequest = new Request.Builder()
                     .url(resultUrl)
                     .get()
@@ -171,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
-                    tvStatus.setText("Erro: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                    tvStatus.setText("Erro: " + e.getMessage());
                     btnSeparate.setEnabled(true);
                 });
             }
