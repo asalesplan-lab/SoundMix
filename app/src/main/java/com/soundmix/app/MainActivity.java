@@ -1,7 +1,10 @@
 package com.soundmix.app;
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.View;
@@ -10,7 +13,10 @@ import android.widget.CheckBox;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -25,6 +31,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 public class MainActivity extends AppCompatActivity {
     private static final int PICK_AUDIO = 1;
+    private static final int PERM_REQUEST = 2;
     private TextView tvFileName, tvStatus;
     private Button btnSelectAudio, btnSeparate, btnDownload;
     private ProgressBar progressBar;
@@ -47,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         cbDrums = findViewById(R.id.cbDrums);
         cbPiano = findViewById(R.id.cbPiano);
         cbOther = findViewById(R.id.cbOther);
+        requestPermissions();
         btnSelectAudio.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("audio/*");
@@ -60,6 +68,20 @@ public class MainActivity extends AppCompatActivity {
             separateStems();
         });
         btnDownload.setOnClickListener(v -> saveMix());
+    }
+    private void requestPermissions() {
+        List<String> perms = new ArrayList<>();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED)
+                perms.add(Manifest.permission.READ_MEDIA_AUDIO);
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+                perms.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+            perms.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (!perms.isEmpty())
+            ActivityCompat.requestPermissions(this, perms.toArray(new String[0]), PERM_REQUEST);
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
