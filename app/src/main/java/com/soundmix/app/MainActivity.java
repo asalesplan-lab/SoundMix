@@ -17,6 +17,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -78,10 +79,17 @@ public class MainActivity extends AppCompatActivity {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
                 perms.add(Manifest.permission.READ_EXTERNAL_STORAGE);
         }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-            perms.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         if (!perms.isEmpty())
             ActivityCompat.requestPermissions(this, perms.toArray(new String[0]), PERM_REQUEST);
+    }
+    private byte[] readBytes(InputStream is) throws Exception {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] chunk = new byte[4096];
+        int n;
+        while ((n = is.read(chunk)) != -1) {
+            buffer.write(chunk, 0, n);
+        }
+        return buffer.toByteArray();
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -106,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 InputStream is = getContentResolver().openInputStream(selectedAudioUri);
-                byte[] audioBytes = is.readAllBytes();
+                byte[] audioBytes = readBytes(is);
                 is.close();
                 String stemsJson = "[\"" + String.join("\",\"", stems) + "\"]";
                 RequestBody requestBody = new MultipartBody.Builder()
@@ -133,12 +141,13 @@ public class MainActivity extends AppCompatActivity {
                         btnSeparate.setEnabled(true);
                     });
                 } else {
-                    throw new Exception("Erro: " + response.code());
+                    String errBody = response.body() != null ? response.body().string() : "sem detalhe";
+                    throw new Exception("HTTP " + response.code() + ": " + errBody);
                 }
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
-                    tvStatus.setText("Erro: " + e.getMessage());
+                    tvStatus.setText("Erro: " + e.getClass().getSimpleName() + ": " + e.getMessage());
                     btnSeparate.setEnabled(true);
                 });
             }
@@ -147,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
     private void saveMix() {
         try {
             File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
+            if (!dir.exists()) dir.mkdirs();
             File file = new File(dir, "soundmix_" + System.currentTimeMillis() + ".mp3");
             FileOutputStream fos = new FileOutputStream(file);
             fos.write(resultBytes);
