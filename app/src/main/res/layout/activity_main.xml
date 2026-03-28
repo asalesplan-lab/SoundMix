@@ -62,3 +62,200 @@
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:layout_marginBottom="8dp"/>
+<CheckBox android:id="@+id/cbVocals"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎤 Vocals" android:textColor="#FFFFFF" android:checked="true"/>
+            <CheckBox android:id="@+id/cbGuitar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎸 Guitar" android:textColor="#FFFFFF" android:checked="true"/>
+            <CheckBox android:id="@+id/cbBass"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎸 Bass" android:textColor="#FFFFFF" android:checked="true"/>
+            <CheckBox android:id="@+id/cbDrums"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🥁 Drums" android:textColor="#FFFFFF" android:checked="true"/>
+            <CheckBox android:id="@+id/cbPiano"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎹 Piano" android:textColor="#FFFFFF" android:checked="true"/>
+            <CheckBox android:id="@+id/cbOther"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎛️ Other" android:textColor="#FFFFFF" android:checked="true"
+                android:layout_marginBottom="24dp"/>
+            <Button
+                android:id="@+id/btnSeparate"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="⚡ Separar Stems"
+                android:backgroundTint="#BB86FC"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="16dp"/>
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp"/>
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#1DB954"
+                android:gravity="center"
+                android:layout_marginBottom="8dp"/>
+            <Button
+                android:id="@+id/btnPlay"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="▶️ OUVIR MIX"
+                android:backgroundTint="#FF9800"
+                android:textColor="#FFFFFF"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp"/>
+            <SeekBar
+                android:id="@+id/seekBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_marginBottom="16dp"/>
+            <Button
+                android:id="@+id/btnDownload"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="⬇️ Baixar Mix"
+                android:backgroundTint="#03DAC6"
+                android:textColor="#000000"
+                android:visibility="gone"/>
+        </LinearLayout>
+    </ScrollView>
+    <ScrollView
+        android:id="@+id/scrollVideoMix"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎬 VideoMix"
+                android:textSize="28sp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="24dp"/>
+
+            <Button
+                android:id="@+id/btnSelectBacking"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="🎵 Selecionar Backing Track"
+                android:backgroundTint="#1DB954"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:id="@+id/tvBackingName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Nenhuma backing track selecionada"
+                android:textColor="#AAAAAA"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔊 Volume da Backing Track"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="4dp"/>
+
+            <SeekBar
+                android:id="@+id/seekBackingVolume"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="80"
+                android:layout_marginBottom="16dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⏱️ Latência Bluetooth (ms)"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="4dp"/>
+
+            <SeekBar
+                android:id="@+id/seekLatency"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="500"
+                android:progress="0"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/tvLatency"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="0 ms"
+                android:textColor="#AAAAAA"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"/>
+
+            <androidx.camera.view.PreviewView
+                android:id="@+id/cameraPreview"
+                android:layout_width="match_parent"
+                android:layout_height="240dp"
+                android:layout_marginBottom="8dp"/>
+
+            <Button
+                android:id="@+id/btnFlipCamera"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="🔄 Trocar Câmera"
+                android:backgroundTint="#455A64"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="8dp"/>
+
+            <Button
+                android:id="@+id/btnRecord"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="⏺️ INICIAR GRAVAÇÃO"
+                android:backgroundTint="#F44336"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:id="@+id/tvRecordStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#1DB954"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"/>
+
+            <Button
+                android:id="@+id/btnExportVideo"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="🎬 EXPORTAR VÍDEO"
+                android:backgroundTint="#03DAC6"
+                android:textColor="#000000"
+                android:visibility="gone"/>
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>
