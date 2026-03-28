@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private Uri selectedAudioUri;
     private byte[] resultBytes;
     private OkHttpClient client;
-  @Override
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -106,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
             tvFileName.setText(selectedAudioUri.getLastPathSegment());
         }
     }
-  private void separateStems() {
+    private void separateStems() {
         List<String> stems = new ArrayList<>();
         if (cbVocals.isChecked()) stems.add("vocals");
         if (cbGuitar.isChecked()) stems.add("guitar");
@@ -153,16 +153,25 @@ public class MainActivity extends AppCompatActivity {
                     .build();
                 Response resultResponse = client.newCall(resultRequest).execute();
                 String resultStr = resultResponse.body().string();
-                String dataLine = "";
+                String dataLine = null;
                 for (String line : resultStr.split("\n")) {
                     if (line.startsWith("data: ")) {
-                        dataLine = line.substring(6).trim();
+                        String candidate = line.substring(6).trim();
+                        if (candidate.startsWith("[")) {
+                            dataLine = candidate;
+                        }
                     }
+                }
+                if (dataLine == null) {
+                    throw new Exception("SSE: " + resultStr.substring(0, Math.min(300, resultStr.length())));
                 }
                 JSONArray resultData = new JSONArray(dataLine);
                 JSONObject audioResult = resultData.getJSONObject(0);
-                String resultUrl = audioResult.optString("url",
-                    BASE_URL + "/gradio_api/file=" + audioResult.optString("path", ""));
+                String resultUrl = audioResult.optString("url", "");
+                if (resultUrl.isEmpty()) {
+                    String path = audioResult.optString("path", "");
+                    resultUrl = BASE_URL + "/gradio_api/file=" + path;
+                }
                 Request downloadRequest = new Request.Builder()
                     .url(resultUrl)
                     .get()
