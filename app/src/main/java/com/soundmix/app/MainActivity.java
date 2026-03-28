@@ -3,6 +3,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -36,12 +38,15 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERM_REQUEST = 2;
     private static final String BASE_URL = "https://alexsales-soundmix-backend.hf.space";
     private TextView tvFileName, tvStatus;
-    private Button btnSelectAudio, btnSeparate, btnDownload;
+    private Button btnSelectAudio, btnSeparate, btnDownload, btnPlay;
     private ProgressBar progressBar;
+    private SeekBar seekBar;
     private CheckBox cbVocals, cbGuitar, cbBass, cbDrums, cbPiano, cbOther;
     private Uri selectedAudioUri;
     private byte[] resultBytes;
     private OkHttpClient client;
+    private MediaPlayer mediaPlayer;
+    private File tempMixFile;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
         btnSelectAudio = findViewById(R.id.btnSelectAudio);
         btnSeparate = findViewById(R.id.btnSeparate);
         btnDownload = findViewById(R.id.btnDownload);
+        btnPlay = findViewById(R.id.btnPlay);
+        seekBar = findViewById(R.id.seekBar);
         progressBar = findViewById(R.id.progressBar);
         cbVocals = findViewById(R.id.cbVocals);
         cbGuitar = findViewById(R.id.cbGuitar);
@@ -75,7 +82,36 @@ public class MainActivity extends AppCompatActivity {
             }
             separateStems();
         });
+        btnPlay.setOnClickListener(v -> togglePlay());
         btnDownload.setOnClickListener(v -> saveMix());
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
+                if (fromUser && mediaPlayer != null) mediaPlayer.seekTo(progress);
+            }
+            public void onStartTrackingTouch(SeekBar s) {}
+            public void onStopTrackingTouch(SeekBar s) {}
+        });
+    }
+    private void togglePlay() {
+        if (mediaPlayer == null || tempMixFile == null) return;
+        if (mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
+            btnPlay.setText("▶️ OUVIR MIX");
+        } else {
+            mediaPlayer.start();
+            btnPlay.setText("⏸️ PAUSAR");
+            updateSeekBar();
+        }
+    }
+    private void updateSeekBar() {
+        if (mediaPlayer == null) return;
+        seekBar.setMax(mediaPlayer.getDuration());
+        new Thread(() -> {
+            while (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                runOnUiThread(() -> seekBar.setProgress(mediaPlayer.getCurrentPosition()));
+                try { Thread.sleep(500); } catch (Exception e) { break; }
+            }
+        }).start();
     }
     private void requestPermissions() {
         List<String> perms = new ArrayList<>();
@@ -106,6 +142,14 @@ public class MainActivity extends AppCompatActivity {
             tvFileName.setText(selectedAudioUri.getLastPathSegment());
         }
     }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
     private void separateStems() {
         List<String> stems = new ArrayList<>();
         if (cbVocals.isChecked()) stems.add("vocals");
@@ -118,6 +162,8 @@ public class MainActivity extends AppCompatActivity {
         btnSeparate.setEnabled(false);
         tvStatus.setText("Enviando audio...");
         btnDownload.setVisibility(View.GONE);
+        btnPlay.setVisibility(View.GONE);
+        seekBar.setVisibility(View.GONE);
         new Thread(() -> {
             try {
                 InputStream is = getContentResolver().openInputStream(selectedAudioUri);
@@ -175,9 +221,7 @@ public class MainActivity extends AppCompatActivity {
                 for (String line : resultStr.split("\n")) {
                     if (line.startsWith("data: ")) {
                         String candidate = line.substring(6).trim();
-                        if (candidate.startsWith("[")) {
-                            dataLine = candidate;
-                        }
+                        if (candidate.startsWith("[")) dataLine = candidate;
                     }
                 }
                 if (dataLine == null) {
@@ -191,14 +235,24 @@ public class MainActivity extends AppCompatActivity {
                     resultUrl = BASE_URL + "/gradio_api/file=" + resultPath;
                 }
                 Request downloadRequest = new Request.Builder()
-                    .url(resultUrl)
-                    .get()
-                    .build();
+                    .url(resultUrl).get().build();
                 Response downloadResponse = client.newCall(downloadRequest).execute();
                 resultBytes = downloadResponse.body().bytes();
+                tempMixFile = File.createTempFile("soundmix", ".mp3", getCacheDir());
+                FileOutputStream fos = new FileOutputStream(tempMixFile);
+                fos.write(resultBytes);
+                fos.close();
+                if (mediaPlayer != null) mediaPlayer.release();
+                mediaPlayer = new MediaPlayer();
+                mediaPlayer.setDataSource(tempMixFile.getAbsolutePath());
+                mediaPlayer.prepare();
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
-                    tvStatus.setText("Pronto! Toque em Baixar Mix.");
+                    tvStatus.setText("Pronto! Ouça antes de baixar.");
+                    btnPlay.setVisibility(View.VISIBLE);
+                    btnPlay.setText("▶️ OUVIR MIX");
+                    seekBar.setVisibility(View.VISIBLE);
+                    seekBar.setMax(mediaPlayer.getDuration());
                     btnDownload.setVisibility(View.VISIBLE);
                     btnSeparate.setEnabled(true);
                 });
