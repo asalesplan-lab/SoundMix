@@ -288,3 +288,186 @@ public class MainActivity extends AppCompatActivity {
             backingPlayer = null;
         }
     }
+private void togglePlay() {
+        if (mediaPlayer == null || tempMixFile == null) return;
+        if (mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
+            btnPlay.setText("▶️ OUVIR MIX");
+        } else {
+            mediaPlayer.start();
+            btnPlay.setText("⏸️ PAUSAR");
+            updateSeekBar();
+        }
+    }
+    private void updateSeekBar() {
+        if (mediaPlayer == null) return;
+        seekBar.setMax(mediaPlayer.getDuration());
+        new Thread(() -> {
+            while (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                runOnUiThread(() -> seekBar.setProgress(mediaPlayer.getCurrentPosition()));
+                try { Thread.sleep(500); } catch (Exception e) { break; }
+            }
+        }).start();
+    }
+    private void requestPermissions() {
+        List<String> perms = new ArrayList<>();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED)
+                perms.add(Manifest.permission.READ_MEDIA_AUDIO);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED)
+                perms.add(Manifest.permission.READ_MEDIA_VIDEO);
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+                perms.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+                perms.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
+            perms.add(Manifest.permission.CAMERA);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
+            perms.add(Manifest.permission.RECORD_AUDIO);
+        if (!perms.isEmpty())
+            ActivityCompat.requestPermissions(this, perms.toArray(new String[0]), PERM_REQUEST);
+    }
+    private byte[] readBytes(InputStream is) throws Exception {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] chunk = new byte[4096];
+        int n;
+        while ((n = is.read(chunk)) != -1) buffer.write(chunk, 0, n);
+        return buffer.toByteArray();
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != Activity.RESULT_OK || data == null) return;
+        if (requestCode == PICK_AUDIO) {
+            selectedAudioUri = data.getData();
+            tvFileName.setText(selectedAudioUri.getLastPathSegment());
+        } else if (requestCode == PICK_BACKING) {
+            backingTrackUri = data.getData();
+            tvBackingName.setText(backingTrackUri.getLastPathSegment());
+        }
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayer != null) { mediaPlayer.release(); mediaPlayer = null; }
+        if (backingPlayer != null) { backingPlayer.release(); backingPlayer = null; }
+        cameraExecutor.shutdown();
+    }
+    private void separateStems() {
+        List<String> stems = new ArrayList<>();
+        if (cbVocals.isChecked()) stems.add("vocals");
+        if (cbGuitar.isChecked()) stems.add("guitar");
+        if (cbBass.isChecked()) stems.add("bass");
+        if (cbDrums.isChecked()) stems.add("drums");
+        if (cbPiano.isChecked()) stems.add("piano");
+        if (cbOther.isChecked()) stems.add("other");
+        progressBar.setVisibility(View.VISIBLE);
+        btnSeparate.setEnabled(false);
+        tvStatus.setText("Enviando audio...");
+        btnDownload.setVisibility(View.GONE);
+        btnPlay.setVisibility(View.GONE);
+        seekBar.setVisibility(View.GONE);
+        new Thread(() -> {
+            try {
+                InputStream is = getContentResolver().openInputStream(selectedAudioUri);
+                byte[] audioBytes = readBytes(is);
+                is.close();
+                runOnUiThread(() -> tvStatus.setText("Fazendo upload..."));
+                RequestBody uploadBody = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("files", "audio.mp3",
+                        RequestBody.create(audioBytes, MediaType.parse("audio/mpeg")))
+                    .build();
+                Request uploadRequest = new Request.Builder()
+                    .url(BASE_URL + "/gradio_api/upload")
+                    .post(uploadBody).build();
+                Response uploadResponse = client.newCall(uploadRequest).execute();
+                String uploadStr = uploadResponse.body().string();
+                if (!uploadResponse.isSuccessful()) throw new Exception("Upload falhou: " + uploadStr);
+                JSONArray uploadedFiles = new JSONArray(uploadStr);
+                String uploadedPath = uploadedFiles.getString(0);
+                runOnUiThread(() -> tvStatus.setText("Processando stems..."));
+                JSONArray stemsArray = new JSONArray(stems);
+                JSONObject fileData = new JSONObject();
+                fileData.put("path", uploadedPath);
+                fileData.put("meta", new JSONObject("{\"_type\":\"gradio.FileData\"}"));
+                JSONArray dataArray = new JSONArray();
+                dataArray.put(fileData);
+                dataArray.put(stemsArray);
+                JSONObject body = new JSONObject();
+                body.put("data", dataArray);
+                Request predictRequest = new Request.Builder()
+                    .url(BASE_URL + "/gradio_api/call/process")
+                    .post(RequestBody.create(body.toString(), MediaType.parse("application/json")))
+                    .build();
+                Response predictResponse = client.newCall(predictRequest).execute();
+                String predictStr = predictResponse.body().string();
+                if (!predictResponse.isSuccessful()) throw new Exception("Predict falhou: " + predictStr);
+                JSONObject predictJson = new JSONObject(predictStr);
+                if (!predictJson.has("event_id")) throw new Exception("Resposta: " + predictStr.substring(0, Math.min(200, predictStr.length())));
+                String eventId = predictJson.getString("event_id");
+                runOnUiThread(() -> tvStatus.setText("Aguardando resultado..."));
+                Request resultRequest = new Request.Builder()
+                    .url(BASE_URL + "/gradio_api/call/process/" + eventId)
+                    .get().build();
+                Response resultResponse = client.newCall(resultRequest).execute();
+                String resultStr = resultResponse.body().string();
+                String dataLine = null;
+                for (String line : resultStr.split("\n")) {
+                    if (line.startsWith("data: ")) {
+                        String candidate = line.substring(6).trim();
+                        if (candidate.startsWith("[")) dataLine = candidate;
+                    }
+                }
+                if (dataLine == null) throw new Exception("SSE: " + resultStr.substring(0, Math.min(300, resultStr.length())));
+                JSONArray resultData = new JSONArray(dataLine);
+                JSONObject audioResult = resultData.getJSONObject(0);
+                String resultPath = audioResult.optString("path", "");
+                String resultUrl = audioResult.optString("url", "");
+                if (resultUrl.isEmpty()) resultUrl = BASE_URL + "/gradio_api/file=" + resultPath;
+                Request downloadRequest = new Request.Builder().url(resultUrl).get().build();
+                Response downloadResponse = client.newCall(downloadRequest).execute();
+                resultBytes = downloadResponse.body().bytes();
+                tempMixFile = File.createTempFile("soundmix", ".mp3", getCacheDir());
+                FileOutputStream fos = new FileOutputStream(tempMixFile);
+                fos.write(resultBytes);
+                fos.close();
+                if (mediaPlayer != null) mediaPlayer.release();
+                mediaPlayer = new MediaPlayer();
+                mediaPlayer.setDataSource(tempMixFile.getAbsolutePath());
+                mediaPlayer.prepare();
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    tvStatus.setText("Pronto! Ouça antes de baixar.");
+                    btnPlay.setVisibility(View.VISIBLE);
+                    btnPlay.setText("▶️ OUVIR MIX");
+                    seekBar.setVisibility(View.VISIBLE);
+                    seekBar.setMax(mediaPlayer.getDuration());
+                    btnDownload.setVisibility(View.VISIBLE);
+                    btnSeparate.setEnabled(true);
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    tvStatus.setText("Erro: " + e.getMessage());
+                    btnSeparate.setEnabled(true);
+                });
+            }
+        }).start();
+    }
+    private void saveMix() {
+        try {
+            File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
+            if (!dir.exists()) dir.mkdirs();
+            File file = new File(dir, "soundmix_" + System.currentTimeMillis() + ".mp3");
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(resultBytes);
+            fos.close();
+            tvStatus.setText("Salvo em: " + file.getName());
+            Toast.makeText(this, "Mix salvo na pasta Music!", Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Erro ao salvar: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
