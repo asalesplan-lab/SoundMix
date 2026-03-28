@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Base64;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -25,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -116,37 +116,55 @@ public class MainActivity extends AppCompatActivity {
         if (cbOther.isChecked()) stems.add("other");
         progressBar.setVisibility(View.VISIBLE);
         btnSeparate.setEnabled(false);
-        tvStatus.setText("Lendo audio...");
+        tvStatus.setText("Enviando audio...");
         btnDownload.setVisibility(View.GONE);
         new Thread(() -> {
             try {
                 InputStream is = getContentResolver().openInputStream(selectedAudioUri);
                 byte[] audioBytes = readBytes(is);
                 is.close();
-                String base64Audio = Base64.encodeToString(audioBytes, Base64.NO_WRAP);
-                String dataUri = "data:audio/mpeg;base64," + base64Audio;
-                runOnUiThread(() -> tvStatus.setText("Enviando para processamento..."));
+                runOnUiThread(() -> tvStatus.setText("Fazendo upload..."));
+                RequestBody uploadBody = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("files", "audio.mp3",
+                        RequestBody.create(audioBytes, MediaType.parse("audio/mpeg")))
+                    .build();
+                Request uploadRequest = new Request.Builder()
+                    .url(BASE_URL + "/gradio_api/upload")
+                    .post(uploadBody)
+                    .build();
+                Response uploadResponse = client.newCall(uploadRequest).execute();
+                String uploadStr = uploadResponse.body().string();
+                if (!uploadResponse.isSuccessful()) {
+                    throw new Exception("Upload falhou: " + uploadStr);
+                }
+                JSONArray uploadedFiles = new JSONArray(uploadStr);
+                String uploadedPath = uploadedFiles.getString(0);
+                runOnUiThread(() -> tvStatus.setText("Processando stems..."));
                 JSONArray stemsArray = new JSONArray(stems);
+                JSONObject fileData = new JSONObject();
+                fileData.put("path", uploadedPath);
+                fileData.put("meta", new JSONObject("{\"_type\":\"gradio.FileData\"}"));
                 JSONArray dataArray = new JSONArray();
-                dataArray.put(dataUri);
+                dataArray.put(fileData);
                 dataArray.put(stemsArray);
                 JSONObject body = new JSONObject();
                 body.put("data", dataArray);
-                Request request = new Request.Builder()
+                Request predictRequest = new Request.Builder()
                     .url(BASE_URL + "/gradio_api/call/process")
                     .post(RequestBody.create(body.toString(), MediaType.parse("application/json")))
                     .build();
-                Response response = client.newCall(request).execute();
-                String responseStr = response.body().string();
-                if (!response.isSuccessful()) {
-                    throw new Exception("Falhou: " + responseStr);
+                Response predictResponse = client.newCall(predictRequest).execute();
+                String predictStr = predictResponse.body().string();
+                if (!predictResponse.isSuccessful()) {
+                    throw new Exception("Predict falhou: " + predictStr);
                 }
-                JSONObject responseJson = new JSONObject(responseStr);
-                if (!responseJson.has("event_id")) {
-                    throw new Exception("Resposta: " + responseStr.substring(0, Math.min(200, responseStr.length())));
+                JSONObject predictJson = new JSONObject(predictStr);
+                if (!predictJson.has("event_id")) {
+                    throw new Exception("Resposta: " + predictStr.substring(0, Math.min(200, predictStr.length())));
                 }
-                String eventId = responseJson.getString("event_id");
-                runOnUiThread(() -> tvStatus.setText("Processando stems... aguarde"));
+                String eventId = predictJson.getString("event_id");
+                runOnUiThread(() -> tvStatus.setText("Aguardando resultado..."));
                 Request resultRequest = new Request.Builder()
                     .url(BASE_URL + "/gradio_api/call/process/" + eventId)
                     .get()
@@ -167,10 +185,10 @@ public class MainActivity extends AppCompatActivity {
                 }
                 JSONArray resultData = new JSONArray(dataLine);
                 JSONObject audioResult = resultData.getJSONObject(0);
+                String resultPath = audioResult.optString("path", "");
                 String resultUrl = audioResult.optString("url", "");
                 if (resultUrl.isEmpty()) {
-                    String path = audioResult.optString("path", "");
-                    resultUrl = BASE_URL + "/gradio_api/file=" + path;
+                    resultUrl = BASE_URL + "/gradio_api/file=" + resultPath;
                 }
                 Request downloadRequest = new Request.Builder()
                     .url(resultUrl)
