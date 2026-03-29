@@ -4,7 +4,12 @@ import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioRecord;
+import android.media.AudioTrack;
 import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,6 +25,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
@@ -43,6 +49,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -56,6 +63,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int PICK_BACKING = 2;
     private static final int PERM_REQUEST = 3;
     private static final String BASE_URL = "https://alexsales-soundmix-backend.hf.space";
+    private static final int SAMPLE_RATE = 44100;
+    private static final int BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLE_RATE,
+        AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
     private TextView tvFileName, tvStatus;
     private Button btnSelectAudio, btnSeparate, btnDownload, btnPlay;
     private ProgressBar progressBar;
@@ -68,10 +78,11 @@ public class MainActivity extends AppCompatActivity {
     private File tempMixFile;
     private TabLayout tabLayout;
     private View scrollStemSeparator, scrollVideoMix;
-    private Button btnSelectBacking, btnRecord, btnExportVideo, btnFlipCamera;
-    private TextView tvBackingName, tvRecordStatus, tvLatency;
+    private Button btnSelectBacking, btnRecord, btnExportVideo, btnFlipCamera, btnLatencyTest;
+    private TextView tvBackingName, tvRecordStatus, tvLatency, tvLatencyTest;
     private SeekBar seekBackingVolume, seekLatency;
     private PreviewView cameraPreview;
+    private SwitchCompat switchMonitor;
     private Uri backingTrackUri;
     private MediaPlayer backingPlayer;
     private VideoCapture<Recorder> videoCapture;
@@ -81,6 +92,9 @@ public class MainActivity extends AppCompatActivity {
     private Uri lastVideoUri;
     private int latencyMs = 0;
     private boolean useFrontCamera = false;
+    private AtomicBoolean isMonitoring = new AtomicBoolean(false);
+    private AudioRecord audioRecord;
+    private AudioTrack audioTrack;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -111,12 +125,15 @@ public class MainActivity extends AppCompatActivity {
         btnRecord = findViewById(R.id.btnRecord);
         btnExportVideo = findViewById(R.id.btnExportVideo);
         btnFlipCamera = findViewById(R.id.btnFlipCamera);
+        btnLatencyTest = findViewById(R.id.btnLatencyTest);
         tvBackingName = findViewById(R.id.tvBackingName);
         tvRecordStatus = findViewById(R.id.tvRecordStatus);
         tvLatency = findViewById(R.id.tvLatency);
+        tvLatencyTest = findViewById(R.id.tvLatencyTest);
         seekBackingVolume = findViewById(R.id.seekBackingVolume);
         seekLatency = findViewById(R.id.seekLatency);
         cameraPreview = findViewById(R.id.cameraPreview);
+        switchMonitor = findViewById(R.id.switchMonitor);
         requestPermissions();
         tabLayout.addTab(tabLayout.newTab().setText("🎛️ Stem Separator"));
         tabLayout.addTab(tabLayout.newTab().setText("🎬 VideoMix"));
@@ -125,6 +142,7 @@ public class MainActivity extends AppCompatActivity {
                 if (tab.getPosition() == 0) {
                     scrollStemSeparator.setVisibility(View.VISIBLE);
                     scrollVideoMix.setVisibility(View.GONE);
+                    stopMonitoring();
                 } else {
                     scrollStemSeparator.setVisibility(View.GONE);
                     scrollVideoMix.setVisibility(View.VISIBLE);
@@ -158,6 +176,7 @@ public class MainActivity extends AppCompatActivity {
             useFrontCamera = !useFrontCamera;
             startCamera();
         });
+        btnLatencyTest.setOnClickListener(v -> runLatencyTest());
         seekLatency.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
                 latencyMs = progress;
@@ -184,6 +203,98 @@ public class MainActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar s) {}
         });
     }
+    private void startMonitoring() {
+        if (isMonitoring.get()) return;
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return;
+        audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE,
+            AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
+        audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, SAMPLE_RATE,
+            AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
+            BUFFER_SIZE, AudioTrack.MODE_STREAM);
+        isMonitoring.set(true);
+        audioRecord.startRecording();
+        audioTrack.play();
+        new Thread(() -> {
+            byte[] buffer = new byte[BUFFER_SIZE];
+            while (isMonitoring.get()) {
+                int read = audioRecord.read(buffer, 0, buffer.length);
+                if (read > 0) audioTrack.write(buffer, 0, read);
+            }
+            audioRecord.stop();
+            audioRecord.release();
+            audioTrack.stop();
+            audioTrack.release();
+            audioRecord = null;
+            audioTrack = null;
+        }).start();
+    }
+    private void stopMonitoring() {
+        isMonitoring.set(false);
+    }
+    private void runLatencyTest() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Permissao de audio necessaria!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        tvLatencyTest.setText("🔬 Testando... use fone de ouvido!");
+        btnLatencyTest.setEnabled(false);
+        new Thread(() -> {
+            try {
+                int sr = 44100;
+                int bufSize = AudioRecord.getMinBufferSize(sr, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+                AudioRecord recorder = new AudioRecord(MediaRecorder.AudioSource.MIC, sr,
+                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize * 4);
+                AudioTrack player = new AudioTrack(AudioManager.STREAM_MUSIC, sr,
+                    AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
+                    bufSize, AudioTrack.MODE_STREAM);
+                short[] beep = new short[sr / 10];
+                for (int i = 0; i < beep.length; i++) {
+                    beep[i] = (short) (Short.MAX_VALUE * Math.sin(2 * Math.PI * 1000 * i / sr));
+                }
+                recorder.startRecording();
+                player.play();
+                long startTime = System.currentTimeMillis();
+                player.write(beep, 0, beep.length);
+                short[] inBuf = new short[bufSize];
+                long detectedTime = -1;
+                long timeout = System.currentTimeMillis() + 2000;
+                while (System.currentTimeMillis() < timeout) {
+                    int read = recorder.read(inBuf, 0, inBuf.length);
+                    for (int i = 0; i < read; i++) {
+                        if (Math.abs(inBuf[i]) > 8000) {
+                            detectedTime = System.currentTimeMillis();
+                            break;
+                        }
+                    }
+                    if (detectedTime > 0) break;
+                }
+                recorder.stop();
+                recorder.release();
+                player.stop();
+                player.release();
+                if (detectedTime > 0) {
+                    int measuredLatency = (int)(detectedTime - startTime);
+                    runOnUiThread(() -> {
+                        seekLatency.setProgress(measuredLatency);
+                        latencyMs = measuredLatency;
+                        tvLatency.setText(measuredLatency + " ms");
+                        tvLatencyTest.setText("✅ Latência detectada: " + measuredLatency + " ms");
+                        btnLatencyTest.setEnabled(true);
+                    });
+                } else {
+                    runOnUiThread(() -> {
+                        tvLatencyTest.setText("❌ Nao detectado. Use fone de ouvido e tente novamente.");
+                        btnLatencyTest.setEnabled(true);
+                    });
+                }
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    tvLatencyTest.setText("Erro: " + e.getMessage());
+                    btnLatencyTest.setEnabled(true);
+                });
+            }
+        }).start();
+    }
     private void startCamera() {
         ProcessCameraProvider.getInstance(this).addListener(() -> {
             try {
@@ -191,8 +302,7 @@ public class MainActivity extends AppCompatActivity {
                 Preview preview = new Preview.Builder().build();
                 preview.setSurfaceProvider(cameraPreview.getSurfaceProvider());
                 Recorder recorder = new Recorder.Builder()
-                    .setQualitySelector(QualitySelector.from(Quality.HD))
-                    .build();
+                    .setQualitySelector(QualitySelector.from(Quality.HD)).build();
                 videoCapture = VideoCapture.withOutput(recorder);
                 CameraSelector cameraSelector = useFrontCamera ?
                     CameraSelector.DEFAULT_FRONT_CAMERA :
@@ -235,6 +345,7 @@ public class MainActivity extends AppCompatActivity {
                     tvRecordStatus.setText("🔴 Gravando...");
                     btnFlipCamera.setEnabled(false);
                     startBackingTrack();
+                    if (switchMonitor.isChecked()) startMonitoring();
                 } else if (event instanceof VideoRecordEvent.Finalize) {
                     VideoRecordEvent.Finalize finalize = (VideoRecordEvent.Finalize) event;
                     if (!finalize.hasError()) {
@@ -245,6 +356,7 @@ public class MainActivity extends AppCompatActivity {
                         tvRecordStatus.setText("Erro: " + finalize.getError());
                     }
                     isRecording = false;
+                    stopMonitoring();
                     btnRecord.setText("⏺️ INICIAR GRAVACAO");
                     btnRecord.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFF44336));
                     btnFlipCamera.setEnabled(true);
@@ -254,6 +366,7 @@ public class MainActivity extends AppCompatActivity {
     private void stopRecording() {
         if (currentRecording != null) { currentRecording.stop(); currentRecording = null; }
         stopBackingTrack();
+        stopMonitoring();
     }
     private void startBackingTrack() {
         if (backingTrackUri == null) return;
@@ -338,6 +451,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        stopMonitoring();
         if (mediaPlayer != null) { mediaPlayer.release(); mediaPlayer = null; }
         if (backingPlayer != null) { backingPlayer.release(); backingPlayer = null; }
         cameraExecutor.shutdown();
