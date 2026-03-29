@@ -205,11 +205,8 @@ public class MainActivity extends AppCompatActivity {
         }, ContextCompat.getMainExecutor(this));
     }
     private void toggleRecording() {
-        if (!isRecording) {
-            startRecording();
-        } else {
-            stopRecording();
-        }
+        if (!isRecording) startRecording();
+        else stopRecording();
     }
     private void startRecording() {
         if (videoCapture == null) {
@@ -222,8 +219,7 @@ public class MainActivity extends AppCompatActivity {
         values.put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/SoundMix");
         MediaStoreOutputOptions options = new MediaStoreOutputOptions.Builder(
             getContentResolver(), MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
-            .setContentValues(values)
-            .build();
+            .setContentValues(values).build();
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(this, "Permissao de audio necessaria!", Toast.LENGTH_SHORT).show();
             return;
@@ -235,8 +231,7 @@ public class MainActivity extends AppCompatActivity {
                 if (event instanceof VideoRecordEvent.Start) {
                     isRecording = true;
                     btnRecord.setText("⏹️ PARAR GRAVACAO");
-                    btnRecord.setBackgroundTintList(
-                        android.content.res.ColorStateList.valueOf(0xFF607D8B));
+                    btnRecord.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF607D8B));
                     tvRecordStatus.setText("🔴 Gravando...");
                     btnFlipCamera.setEnabled(false);
                     startBackingTrack();
@@ -251,17 +246,13 @@ public class MainActivity extends AppCompatActivity {
                     }
                     isRecording = false;
                     btnRecord.setText("⏺️ INICIAR GRAVACAO");
-                    btnRecord.setBackgroundTintList(
-                        android.content.res.ColorStateList.valueOf(0xFFF44336));
+                    btnRecord.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFF44336));
                     btnFlipCamera.setEnabled(true);
                 }
             });
     }
     private void stopRecording() {
-        if (currentRecording != null) {
-            currentRecording.stop();
-            currentRecording = null;
-        }
+        if (currentRecording != null) { currentRecording.stop(); currentRecording = null; }
         stopBackingTrack();
     }
     private void startBackingTrack() {
@@ -282,13 +273,9 @@ public class MainActivity extends AppCompatActivity {
         }, latencyMs);
     }
     private void stopBackingTrack() {
-        if (backingPlayer != null) {
-            backingPlayer.stop();
-            backingPlayer.release();
-            backingPlayer = null;
-        }
+        if (backingPlayer != null) { backingPlayer.stop(); backingPlayer.release(); backingPlayer = null; }
     }
-private void togglePlay() {
+    private void togglePlay() {
         if (mediaPlayer == null || tempMixFile == null) return;
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
@@ -471,3 +458,4 @@ private void togglePlay() {
             Toast.makeText(this, "Erro ao salvar: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
+}
