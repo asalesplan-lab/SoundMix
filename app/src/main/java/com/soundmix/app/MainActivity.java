@@ -13,6 +13,7 @@ import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -95,6 +96,8 @@ public class MainActivity extends AppCompatActivity {
     private AtomicBoolean isMonitoring = new AtomicBoolean(false);
     private AudioRecord audioRecord;
     private AudioTrack audioTrack;
+    private CountDownTimer countDownTimer;
+    private boolean isPreparing = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -171,7 +174,15 @@ public class MainActivity extends AppCompatActivity {
             intent.setType("audio/*");
             startActivityForResult(intent, PICK_BACKING);
         });
-        btnRecord.setOnClickListener(v -> toggleRecording());
+        btnRecord.setOnClickListener(v -> {
+            if (isPreparing) {
+                cancelPreparation();
+            } else if (!isRecording) {
+                startPreparation();
+            } else {
+                stopRecording();
+            }
+        });
         btnFlipCamera.setOnClickListener(v -> {
             useFrontCamera = !useFrontCamera;
             startCamera();
@@ -202,6 +213,82 @@ public class MainActivity extends AppCompatActivity {
             public void onStartTrackingTouch(SeekBar s) {}
             public void onStopTrackingTouch(SeekBar s) {}
         });
+    }
+    private void startPreparation() {
+        isPreparing = true;
+        btnRecord.setText("❌ CANCELAR");
+        btnFlipCamera.setEnabled(false);
+        // FASE 1: 15s para se preparar
+        tvRecordStatus.setText("⏳ Prepare-se! Ajuste-se e ajuste sua câmera... 15s");
+        countDownTimer = new CountDownTimer(15000, 1000) {
+            public void onTick(long ms) {
+                long s = ms / 1000 + 1;
+                tvRecordStatus.setText("⏳ Prepare-se! Ajuste-se e ajuste sua câmera... " + s + "s");
+            }
+            public void onFinish() {
+                // FASE 2: 30s de prévia da backing track
+                startPreviewPhase();
+            }
+        }.start();
+    }
+    private void startPreviewPhase() {
+        tvRecordStatus.setText("🎵 Treine! Prévia tocando... 30s");
+        startBackingTrack();
+        countDownTimer = new CountDownTimer(30000, 1000) {
+            public void onTick(long ms) {
+                long s = ms / 1000 + 1;
+                tvRecordStatus.setText("🎵 Treine! Prévia tocando... " + s + "s");
+            }
+            public void onFinish() {
+                stopBackingTrack();
+                // FASE 3: 5s com beep
+                startFinalCountdown();
+            }
+        }.start();
+    }
+    private void startFinalCountdown() {
+        playBeep();
+        tvRecordStatus.setText("🔴 Gravando em 5s...");
+        countDownTimer = new CountDownTimer(5000, 1000) {
+            public void onTick(long ms) {
+                long s = ms / 1000 + 1;
+                tvRecordStatus.setText("🔴 Gravando em " + s + "s...");
+            }
+            public void onFinish() {
+                isPreparing = false;
+                startRecording();
+            }
+        }.start();
+    }
+    private void cancelPreparation() {
+        if (countDownTimer != null) { countDownTimer.cancel(); countDownTimer = null; }
+        stopBackingTrack();
+        isPreparing = false;
+        isRecording = false;
+        btnRecord.setText("⏺️ INICIAR GRAVAÇÃO");
+        btnRecord.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFF44336));
+        btnFlipCamera.setEnabled(true);
+        tvRecordStatus.setText("❌ Cancelado.");
+    }
+    private void playBeep() {
+        new Thread(() -> {
+            try {
+                int sr = 44100;
+                int duration = sr / 4;
+                short[] samples = new short[duration];
+                for (int i = 0; i < duration; i++) {
+                    samples[i] = (short)(Short.MAX_VALUE * Math.sin(2 * Math.PI * 880 * i / sr));
+                }
+                AudioTrack beepTrack = new AudioTrack(AudioManager.STREAM_MUSIC, sr,
+                    AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
+                    duration * 2, AudioTrack.MODE_STATIC);
+                beepTrack.write(samples, 0, samples.length);
+                beepTrack.play();
+                Thread.sleep(300);
+                beepTrack.stop();
+                beepTrack.release();
+            } catch (Exception e) {}
+        }).start();
     }
     private void startMonitoring() {
         if (isMonitoring.get()) return;
@@ -249,7 +336,7 @@ public class MainActivity extends AppCompatActivity {
                     bufSize, AudioTrack.MODE_STREAM);
                 short[] beep = new short[sr / 10];
                 for (int i = 0; i < beep.length; i++) {
-                    beep[i] = (short) (Short.MAX_VALUE * Math.sin(2 * Math.PI * 1000 * i / sr));
+                    beep[i] = (short)(Short.MAX_VALUE * Math.sin(2 * Math.PI * 1000 * i / sr));
                 }
                 recorder.startRecording();
                 player.play();
@@ -273,17 +360,17 @@ public class MainActivity extends AppCompatActivity {
                 player.stop();
                 player.release();
                 if (detectedTime > 0) {
-                    int measuredLatency = (int)(detectedTime - startTime);
+                    int measured = (int)(detectedTime - startTime);
                     runOnUiThread(() -> {
-                        seekLatency.setProgress(measuredLatency);
-                        latencyMs = measuredLatency;
-                        tvLatency.setText(measuredLatency + " ms");
-                        tvLatencyTest.setText("✅ Latência detectada: " + measuredLatency + " ms");
+                        seekLatency.setProgress(measured);
+                        latencyMs = measured;
+                        tvLatency.setText(measured + " ms");
+                        tvLatencyTest.setText("✅ Latência detectada: " + measured + " ms");
                         btnLatencyTest.setEnabled(true);
                     });
                 } else {
                     runOnUiThread(() -> {
-                        tvLatencyTest.setText("❌ Nao detectado. Use fone de ouvido e tente novamente.");
+                        tvLatencyTest.setText("❌ Nao detectado. Use fone e tente novamente.");
                         btnLatencyTest.setEnabled(true);
                     });
                 }
@@ -313,10 +400,6 @@ public class MainActivity extends AppCompatActivity {
                 tvRecordStatus.setText("Erro camera: " + e.getMessage());
             }
         }, ContextCompat.getMainExecutor(this));
-    }
-    private void toggleRecording() {
-        if (!isRecording) startRecording();
-        else stopRecording();
     }
     private void startRecording() {
         if (videoCapture == null) {
@@ -451,6 +534,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (countDownTimer != null) countDownTimer.cancel();
         stopMonitoring();
         if (mediaPlayer != null) { mediaPlayer.release(); mediaPlayer = null; }
         if (backingPlayer != null) { backingPlayer.release(); backingPlayer = null; }
