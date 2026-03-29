@@ -62,7 +62,7 @@
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:layout_marginBottom="8dp"/>
-<CheckBox android:id="@+id/cbVocals"
+            <CheckBox android:id="@+id/cbVocals"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="🎤 Vocals" android:textColor="#FFFFFF" android:checked="true"/>
@@ -211,6 +211,40 @@
                 android:text="0 ms"
                 android:textColor="#AAAAAA"
                 android:gravity="center"
+                android:layout_marginBottom="8dp"/>
+
+            <Button
+                android:id="@+id/btnLatencyTest"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="🔬 Teste Automático de Latência"
+                android:backgroundTint="#7B1FA2"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="16dp"/>
+
+            <TextView
+                android:id="@+id/tvLatencyTest"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#AAAAAA"
+                android:gravity="center"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎧 Monitoramento"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="4dp"/>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchMonitor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Monitoramento em tempo real"
+                android:textColor="#FFFFFF"
+                android:checked="true"
                 android:layout_marginBottom="16dp"/>
 
             <androidx.camera.view.PreviewView
