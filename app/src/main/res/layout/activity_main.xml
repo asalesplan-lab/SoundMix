@@ -200,7 +200,7 @@
                 android:id="@+id/seekLatency"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:max="500"
+                android:max="5000"
                 android:progress="0"
                 android:layout_marginBottom="4dp"/>
 
