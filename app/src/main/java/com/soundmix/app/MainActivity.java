@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -22,6 +23,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ProgressBar;
+import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -84,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar seekBackingVolume, seekLatency;
     private PreviewView cameraPreview;
     private SwitchCompat switchMonitor;
+    private RadioGroup radioGroupAudio;
     private Uri backingTrackUri;
     private MediaPlayer backingPlayer;
     private VideoCapture<Recorder> videoCapture;
@@ -98,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
     private AudioTrack audioTrack;
     private CountDownTimer countDownTimer;
     private boolean isPreparing = false;
+    private int selectedAudioSource = MediaRecorder.AudioSource.MIC;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -137,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
         seekLatency = findViewById(R.id.seekLatency);
         cameraPreview = findViewById(R.id.cameraPreview);
         switchMonitor = findViewById(R.id.switchMonitor);
+        radioGroupAudio = findViewById(R.id.radioGroupAudio);
         requestPermissions();
         tabLayout.addTab(tabLayout.newTab().setText("🎛️ Stem Separator"));
         tabLayout.addTab(tabLayout.newTab().setText("🎬 VideoMix"));
@@ -175,19 +180,30 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(intent, PICK_BACKING);
         });
         btnRecord.setOnClickListener(v -> {
-            if (isPreparing) {
-                cancelPreparation();
-            } else if (!isRecording) {
-                startPreparation();
-            } else {
-                stopRecording();
-            }
+            if (isPreparing) cancelPreparation();
+            else if (!isRecording) startPreparation();
+            else stopRecording();
         });
         btnFlipCamera.setOnClickListener(v -> {
             useFrontCamera = !useFrontCamera;
             startCamera();
         });
-        btnLatencyTest.setOnClickListener(v -> runLatencyTest());
+        btnLatencyTest.setOnClickListener(v -> runDifferentialLatencyTest());
+        radioGroupAudio.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.radioMicAndroid) {
+                selectedAudioSource = MediaRecorder.AudioSource.MIC;
+                tvLatencyTest.setText("🎤 Microfone do aparelho selecionado");
+            } else if (checkedId == R.id.radioMicBT) {
+                selectedAudioSource = MediaRecorder.AudioSource.MIC;
+                tvLatencyTest.setText("🎧 Bluetooth selecionado — use o Teste Diferencial!");
+            } else if (checkedId == R.id.radioMicWired) {
+                selectedAudioSource = MediaRecorder.AudioSource.MIC;
+                tvLatencyTest.setText("🔌 Entrada por fio selecionada");
+            } else if (checkedId == R.id.radioMicOTG) {
+                selectedAudioSource = MediaRecorder.AudioSource.MIC;
+                tvLatencyTest.setText("🎛️ OTG selecionado");
+            }
+        });
         seekLatency.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
                 latencyMs = progress;
@@ -214,21 +230,112 @@ public class MainActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar s) {}
         });
     }
+    private void runDifferentialLatencyTest() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Permissao de audio necessaria!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        tvLatencyTest.setText("🔬 Iniciando teste diferencial...");
+        btnLatencyTest.setEnabled(false);
+        new Thread(() -> {
+            try {
+                int sr = 44100;
+                int bufSize = AudioRecord.getMinBufferSize(sr, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT) * 4;
+                // Gravador 1 — Microfone do Android (referência)
+                AudioRecord recAndroid = new AudioRecord(MediaRecorder.AudioSource.MIC, sr,
+                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
+                // Gravador 2 — Dispositivo selecionado pelo usuário
+                AudioRecord recSelected = new AudioRecord(selectedAudioSource, sr,
+                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
+                // Player para o beep
+                AudioTrack player = new AudioTrack(AudioManager.STREAM_MUSIC, sr,
+                    AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
+                    bufSize, AudioTrack.MODE_STREAM);
+                // Gera beep de 1000Hz
+                short[] beep = new short[sr / 5];
+                for (int i = 0; i < beep.length; i++) {
+                    beep[i] = (short)(Short.MAX_VALUE * 0.8 * Math.sin(2 * Math.PI * 1000 * i / sr));
+                }
+                runOnUiThread(() -> tvLatencyTest.setText("🔬 Aquecendo gravadores..."));
+                recAndroid.startRecording();
+                recSelected.startRecording();
+                Thread.sleep(300);
+                runOnUiThread(() -> tvLatencyTest.setText("🔬 Tocando beep de referência..."));
+                player.play();
+                long beepStartTime = System.currentTimeMillis();
+                player.write(beep, 0, beep.length);
+                short[] bufAndroid = new short[bufSize];
+                short[] bufSelected = new short[bufSize];
+                long detectedAndroid = -1;
+                long detectedSelected = -1;
+                long timeout = System.currentTimeMillis() + 3000;
+                int threshold = 6000;
+                while (System.currentTimeMillis() < timeout) {
+                    if (detectedAndroid < 0) {
+                        int read = recAndroid.read(bufAndroid, 0, bufAndroid.length);
+                        for (int i = 0; i < read; i++) {
+                            if (Math.abs(bufAndroid[i]) > threshold) {
+                                detectedAndroid = System.currentTimeMillis();
+                                break;
+                            }
+                        }
+                    }
+                    if (detectedSelected < 0) {
+                        int read = recSelected.read(bufSelected, 0, bufSelected.length);
+                        for (int i = 0; i < read; i++) {
+                            if (Math.abs(bufSelected[i]) > threshold) {
+                                detectedSelected = System.currentTimeMillis();
+                                break;
+                            }
+                        }
+                    }
+                    if (detectedAndroid > 0 && detectedSelected > 0) break;
+                }
+                recAndroid.stop(); recAndroid.release();
+                recSelected.stop(); recSelected.release();
+                player.stop(); player.release();
+                long finalAndroid = detectedAndroid;
+                long finalSelected = detectedSelected;
+                runOnUiThread(() -> {
+                    btnLatencyTest.setEnabled(true);
+                    if (finalAndroid > 0 && finalSelected > 0) {
+                        long latAndroid = finalAndroid - beepStartTime;
+                        long latSelected = finalSelected - beepStartTime;
+                        long diff = Math.abs(latSelected - latAndroid);
+                        seekLatency.setProgress((int) diff);
+                        latencyMs = (int) diff;
+                        tvLatency.setText(diff + " ms");
+                        tvLatencyTest.setText(
+                            "✅ Resultado:\n" +
+                            "🎤 Android: " + latAndroid + "ms\n" +
+                            "🎧 Dispositivo: " + latSelected + "ms\n" +
+                            "📊 Diferença (latência real): " + diff + "ms"
+                        );
+                    } else if (finalAndroid > 0) {
+                        tvLatencyTest.setText("⚠️ Dispositivo selecionado não detectou sinal.\nVerifique a conexão.");
+                    } else {
+                        tvLatencyTest.setText("❌ Nenhum sinal detectado.\nUse fone de ouvido e tente novamente.");
+                    }
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    tvLatencyTest.setText("Erro: " + e.getMessage());
+                    btnLatencyTest.setEnabled(true);
+                });
+            }
+        }).start();
+    }
     private void startPreparation() {
         isPreparing = true;
         btnRecord.setText("❌ CANCELAR");
         btnFlipCamera.setEnabled(false);
-        // FASE 1: 15s para se preparar
         tvRecordStatus.setText("⏳ Prepare-se! Ajuste-se e ajuste sua câmera... 15s");
         countDownTimer = new CountDownTimer(15000, 1000) {
             public void onTick(long ms) {
                 long s = ms / 1000 + 1;
                 tvRecordStatus.setText("⏳ Prepare-se! Ajuste-se e ajuste sua câmera... " + s + "s");
             }
-            public void onFinish() {
-                // FASE 2: 30s de prévia da backing track
-                startPreviewPhase();
-            }
+            public void onFinish() { startPreviewPhase(); }
         }.start();
     }
     private void startPreviewPhase() {
@@ -241,14 +348,12 @@ public class MainActivity extends AppCompatActivity {
             }
             public void onFinish() {
                 stopBackingTrack();
-                // FASE 3: 5s com beep
                 startFinalCountdown();
             }
         }.start();
     }
     private void startFinalCountdown() {
         playBeep();
-        tvRecordStatus.setText("🔴 Gravando em 5s...");
         countDownTimer = new CountDownTimer(5000, 1000) {
             public void onTick(long ms) {
                 long s = ms / 1000 + 1;
@@ -293,7 +398,7 @@ public class MainActivity extends AppCompatActivity {
     private void startMonitoring() {
         if (isMonitoring.get()) return;
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return;
-        audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE,
+        audioRecord = new AudioRecord(selectedAudioSource, SAMPLE_RATE,
             AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
         audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, SAMPLE_RATE,
             AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
@@ -317,70 +422,6 @@ public class MainActivity extends AppCompatActivity {
     }
     private void stopMonitoring() {
         isMonitoring.set(false);
-    }
-    private void runLatencyTest() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "Permissao de audio necessaria!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        tvLatencyTest.setText("🔬 Testando... use fone de ouvido!");
-        btnLatencyTest.setEnabled(false);
-        new Thread(() -> {
-            try {
-                int sr = 44100;
-                int bufSize = AudioRecord.getMinBufferSize(sr, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-                AudioRecord recorder = new AudioRecord(MediaRecorder.AudioSource.MIC, sr,
-                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize * 4);
-                AudioTrack player = new AudioTrack(AudioManager.STREAM_MUSIC, sr,
-                    AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
-                    bufSize, AudioTrack.MODE_STREAM);
-                short[] beep = new short[sr / 10];
-                for (int i = 0; i < beep.length; i++) {
-                    beep[i] = (short)(Short.MAX_VALUE * Math.sin(2 * Math.PI * 1000 * i / sr));
-                }
-                recorder.startRecording();
-                player.play();
-                long startTime = System.currentTimeMillis();
-                player.write(beep, 0, beep.length);
-                short[] inBuf = new short[bufSize];
-                long detectedTime = -1;
-                long timeout = System.currentTimeMillis() + 2000;
-                while (System.currentTimeMillis() < timeout) {
-                    int read = recorder.read(inBuf, 0, inBuf.length);
-                    for (int i = 0; i < read; i++) {
-                        if (Math.abs(inBuf[i]) > 8000) {
-                            detectedTime = System.currentTimeMillis();
-                            break;
-                        }
-                    }
-                    if (detectedTime > 0) break;
-                }
-                recorder.stop();
-                recorder.release();
-                player.stop();
-                player.release();
-                if (detectedTime > 0) {
-                    int measured = (int)(detectedTime - startTime);
-                    runOnUiThread(() -> {
-                        seekLatency.setProgress(measured);
-                        latencyMs = measured;
-                        tvLatency.setText(measured + " ms");
-                        tvLatencyTest.setText("✅ Latência detectada: " + measured + " ms");
-                        btnLatencyTest.setEnabled(true);
-                    });
-                } else {
-                    runOnUiThread(() -> {
-                        tvLatencyTest.setText("❌ Nao detectado. Use fone e tente novamente.");
-                        btnLatencyTest.setEnabled(true);
-                    });
-                }
-            } catch (Exception e) {
-                runOnUiThread(() -> {
-                    tvLatencyTest.setText("Erro: " + e.getMessage());
-                    btnLatencyTest.setEnabled(true);
-                });
-            }
-        }).start();
     }
     private void startCamera() {
         ProcessCameraProvider.getInstance(this).addListener(() -> {
