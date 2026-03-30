@@ -192,6 +192,51 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:text="🎤 Entrada de Áudio"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp"/>
+
+            <RadioGroup
+                android:id="@+id/radioGroupAudio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <RadioButton
+                    android:id="@+id/radioMicAndroid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🎤 Microfone do Aparelho"
+                    android:textColor="#FFFFFF"
+                    android:checked="true"/>
+
+                <RadioButton
+                    android:id="@+id/radioMicBT"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🎧 Microfone Bluetooth"
+                    android:textColor="#FFFFFF"/>
+
+                <RadioButton
+                    android:id="@+id/radioMicWired"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🔌 Entrada por Fio (P2/USB)"
+                    android:textColor="#FFFFFF"/>
+
+                <RadioButton
+                    android:id="@+id/radioMicOTG"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🎛️ Dispositivo OTG"
+                    android:textColor="#FFFFFF"/>
+
+            </RadioGroup>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:text="⏱️ Latência Bluetooth (ms)"
                 android:textColor="#FFFFFF"
                 android:layout_marginBottom="4dp"/>
@@ -217,10 +262,10 @@
                 android:id="@+id/btnLatencyTest"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:text="🔬 Teste Automático de Latência"
+                android:text="🔬 Teste Diferencial de Latência"
                 android:backgroundTint="#7B1FA2"
                 android:textColor="#FFFFFF"
-                android:layout_marginBottom="16dp"/>
+                android:layout_marginBottom="8dp"/>
 
             <TextView
                 android:id="@+id/tvLatencyTest"
@@ -229,7 +274,7 @@
                 android:text=""
                 android:textColor="#AAAAAA"
                 android:gravity="center"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="16dp"/>
 
             <TextView
                 android:layout_width="match_parent"
