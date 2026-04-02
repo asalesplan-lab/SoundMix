@@ -73,7 +73,8 @@ public class MainActivity extends AppCompatActivity {
     private Button btnSelectAudio, btnSeparate, btnDownload, btnPlay;
     private ProgressBar progressBar;
     private SeekBar seekBar;
-    private CheckBox cbVocals, cbGuitar, cbBass, cbDrums, cbPiano, cbOther;
+    private CheckBox cbVocals, cbDrums, cbBass, cbPiano;
+    private CheckBox cbGuitarRhythm, cbGuitarLead, cbSynth, cbStrings, cbResidual;
     private Uri selectedAudioUri;
     private byte[] resultBytes;
     private OkHttpClient client;
@@ -121,11 +122,14 @@ public class MainActivity extends AppCompatActivity {
         seekBar = findViewById(R.id.seekBar);
         progressBar = findViewById(R.id.progressBar);
         cbVocals = findViewById(R.id.cbVocals);
-        cbGuitar = findViewById(R.id.cbGuitar);
-        cbBass = findViewById(R.id.cbBass);
         cbDrums = findViewById(R.id.cbDrums);
+        cbBass = findViewById(R.id.cbBass);
         cbPiano = findViewById(R.id.cbPiano);
-        cbOther = findViewById(R.id.cbOther);
+        cbGuitarRhythm = findViewById(R.id.cbGuitarRhythm);
+        cbGuitarLead = findViewById(R.id.cbGuitarLead);
+        cbSynth = findViewById(R.id.cbSynth);
+        cbStrings = findViewById(R.id.cbStrings);
+        cbResidual = findViewById(R.id.cbResidual);
         tabLayout = findViewById(R.id.tabLayout);
         scrollStemSeparator = findViewById(R.id.scrollStemSeparator);
         scrollVideoMix = findViewById(R.id.scrollVideoMix);
@@ -242,17 +246,13 @@ public class MainActivity extends AppCompatActivity {
             try {
                 int sr = 44100;
                 int bufSize = AudioRecord.getMinBufferSize(sr, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT) * 4;
-                // Gravador 1 — Microfone do Android (referência)
                 AudioRecord recAndroid = new AudioRecord(MediaRecorder.AudioSource.MIC, sr,
                     AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
-                // Gravador 2 — Dispositivo selecionado pelo usuário
                 AudioRecord recSelected = new AudioRecord(selectedAudioSource, sr,
                     AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
-                // Player para o beep
                 AudioTrack player = new AudioTrack(AudioManager.STREAM_MUSIC, sr,
                     AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
                     bufSize, AudioTrack.MODE_STREAM);
-                // Gera beep de 1000Hz
                 short[] beep = new short[sr / 5];
                 for (int i = 0; i < beep.length; i++) {
                     beep[i] = (short)(Short.MAX_VALUE * 0.8 * Math.sin(2 * Math.PI * 1000 * i / sr));
@@ -306,16 +306,11 @@ public class MainActivity extends AppCompatActivity {
                         seekLatency.setProgress((int) diff);
                         latencyMs = (int) diff;
                         tvLatency.setText(diff + " ms");
-                        tvLatencyTest.setText(
-                            "✅ Resultado:\n" +
-                            "🎤 Android: " + latAndroid + "ms\n" +
-                            "🎧 Dispositivo: " + latSelected + "ms\n" +
-                            "📊 Diferença (latência real): " + diff + "ms"
-                        );
+                        tvLatencyTest.setText("✅ Resultado:\n🎤 Android: " + latAndroid + "ms\n🎧 Dispositivo: " + latSelected + "ms\n📊 Diferença: " + diff + "ms");
                     } else if (finalAndroid > 0) {
-                        tvLatencyTest.setText("⚠️ Dispositivo selecionado não detectou sinal.\nVerifique a conexão.");
+                        tvLatencyTest.setText("⚠️ Dispositivo selecionado não detectou sinal.");
                     } else {
-                        tvLatencyTest.setText("❌ Nenhum sinal detectado.\nUse fone de ouvido e tente novamente.");
+                        tvLatencyTest.setText("❌ Nenhum sinal detectado. Use fone e tente novamente.");
                     }
                 });
             } catch (Exception e) {
@@ -413,17 +408,12 @@ public class MainActivity extends AppCompatActivity {
                 int read = audioRecord.read(buffer, 0, buffer.length);
                 if (read > 0) audioTrack.write(buffer, 0, read);
             }
-            audioRecord.stop();
-            audioRecord.release();
-            audioTrack.stop();
-            audioTrack.release();
-            audioRecord = null;
-            audioTrack = null;
+            audioRecord.stop(); audioRecord.release();
+            audioTrack.stop(); audioTrack.release();
+            audioRecord = null; audioTrack = null;
         }).start();
     }
-    private void stopMonitoring() {
-        isMonitoring.set(false);
-    }
+    private void stopMonitoring() { isMonitoring.set(false); }
     private void startCamera() {
         ProcessCameraProvider.getInstance(this).addListener(() -> {
             try {
@@ -585,11 +575,14 @@ public class MainActivity extends AppCompatActivity {
     private void separateStems() {
         List<String> stems = new ArrayList<>();
         if (cbVocals.isChecked()) stems.add("vocals");
-        if (cbGuitar.isChecked()) stems.add("guitar");
-        if (cbBass.isChecked()) stems.add("bass");
         if (cbDrums.isChecked()) stems.add("drums");
+        if (cbBass.isChecked()) stems.add("bass");
         if (cbPiano.isChecked()) stems.add("piano");
-        if (cbOther.isChecked()) stems.add("other");
+        if (cbGuitarRhythm.isChecked()) stems.add("guitar_rhythm");
+        if (cbGuitarLead.isChecked()) stems.add("guitar_lead");
+        if (cbSynth.isChecked()) stems.add("synth");
+        if (cbStrings.isChecked()) stems.add("strings");
+        if (cbResidual.isChecked()) stems.add("residual");
         progressBar.setVisibility(View.VISIBLE);
         btnSeparate.setEnabled(false);
         tvStatus.setText("Enviando audio...");
