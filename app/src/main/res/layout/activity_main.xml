@@ -66,26 +66,38 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="🎤 Vocals" android:textColor="#FFFFFF" android:checked="true"/>
-            <CheckBox android:id="@+id/cbGuitar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🎸 Guitar" android:textColor="#FFFFFF" android:checked="true"/>
-            <CheckBox android:id="@+id/cbBass"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🎸 Bass" android:textColor="#FFFFFF" android:checked="true"/>
             <CheckBox android:id="@+id/cbDrums"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="🥁 Drums" android:textColor="#FFFFFF" android:checked="true"/>
+            <CheckBox android:id="@+id/cbBass"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎸 Bass" android:textColor="#FFFFFF" android:checked="true"/>
             <CheckBox android:id="@+id/cbPiano"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="🎹 Piano" android:textColor="#FFFFFF" android:checked="true"/>
-            <CheckBox android:id="@+id/cbOther"
+            <CheckBox android:id="@+id/cbGuitarRhythm"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🎛️ Other" android:textColor="#FFFFFF" android:checked="true"
+                android:text="🎸 Guitar Rhythm" android:textColor="#FFFFFF" android:checked="true"/>
+            <CheckBox android:id="@+id/cbGuitarLead"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎸 Guitar Lead (Solo)" android:textColor="#FFFFFF" android:checked="true"/>
+            <CheckBox android:id="@+id/cbSynth"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎛️ Synth/Pad" android:textColor="#FFFFFF" android:checked="true"/>
+            <CheckBox android:id="@+id/cbStrings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎻 Strings" android:textColor="#FFFFFF" android:checked="true"/>
+            <CheckBox android:id="@+id/cbResidual"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎵 Residual" android:textColor="#FFFFFF" android:checked="true"
                 android:layout_marginBottom="24dp"/>
             <Button
                 android:id="@+id/btnSeparate"
@@ -202,7 +214,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp">
-
                 <RadioButton
                     android:id="@+id/radioMicAndroid"
                     android:layout_width="match_parent"
@@ -210,28 +221,24 @@
                     android:text="🎤 Microfone do Aparelho"
                     android:textColor="#FFFFFF"
                     android:checked="true"/>
-
                 <RadioButton
                     android:id="@+id/radioMicBT"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="🎧 Microfone Bluetooth"
                     android:textColor="#FFFFFF"/>
-
                 <RadioButton
                     android:id="@+id/radioMicWired"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="🔌 Entrada por Fio (P2/USB)"
                     android:textColor="#FFFFFF"/>
-
                 <RadioButton
                     android:id="@+id/radioMicOTG"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="🎛️ Dispositivo OTG"
                     android:textColor="#FFFFFF"/>
-
             </RadioGroup>
 
             <TextView
