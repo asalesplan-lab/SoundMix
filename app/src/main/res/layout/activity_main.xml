@@ -15,6 +15,7 @@
         app:tabIndicatorColor="#BB86FC"
         xmlns:app="http://schemas.android.com/apk/res-auto"/>
 
+    <!-- ===== ABA STEM SEPARATOR ===== -->
     <ScrollView
         android:id="@+id/scrollStemSeparator"
         android:layout_width="match_parent"
@@ -37,6 +38,7 @@
                 android:gravity="center"
                 android:layout_marginBottom="24dp"/>
 
+            <!-- Botão selecionar música -->
             <Button
                 android:id="@+id/btnSelectAudio"
                 android:layout_width="match_parent"
@@ -55,50 +57,7 @@
                 android:gravity="center"
                 android:layout_marginBottom="24dp"/>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Faixas para incluir no mix:"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:layout_marginBottom="8dp"/>
-            <CheckBox android:id="@+id/cbVocals"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🎤 Vocals" android:textColor="#FFFFFF" android:checked="true"/>
-            <CheckBox android:id="@+id/cbDrums"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🥁 Drums" android:textColor="#FFFFFF" android:checked="true"/>
-            <CheckBox android:id="@+id/cbBass"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🎸 Bass" android:textColor="#FFFFFF" android:checked="true"/>
-            <CheckBox android:id="@+id/cbPiano"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🎹 Piano" android:textColor="#FFFFFF" android:checked="true"/>
-            <CheckBox android:id="@+id/cbGuitarRhythm"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🎸 Guitar Rhythm" android:textColor="#FFFFFF" android:checked="true"/>
-            <CheckBox android:id="@+id/cbGuitarLead"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🎸 Guitar Lead (Solo)" android:textColor="#FFFFFF" android:checked="true"/>
-            <CheckBox android:id="@+id/cbSynth"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🎛️ Synth/Pad" android:textColor="#FFFFFF" android:checked="true"/>
-            <CheckBox android:id="@+id/cbStrings"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🎻 Strings" android:textColor="#FFFFFF" android:checked="true"/>
-            <CheckBox android:id="@+id/cbResidual"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🎵 Residual" android:textColor="#FFFFFF" android:checked="true"
-                android:layout_marginBottom="24dp"/>
+            <!-- Botão separar -->
             <Button
                 android:id="@+id/btnSeparate"
                 android:layout_width="match_parent"
@@ -107,12 +66,15 @@
                 android:backgroundTint="#BB86FC"
                 android:textColor="#FFFFFF"
                 android:layout_marginBottom="16dp"/>
+
+            <!-- Progress + Status -->
             <ProgressBar
                 android:id="@+id/progressBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:visibility="gone"
                 android:layout_marginBottom="8dp"/>
+
             <TextView
                 android:id="@+id/tvStatus"
                 android:layout_width="match_parent"
@@ -120,32 +82,393 @@
                 android:text=""
                 android:textColor="#1DB954"
                 android:gravity="center"
-                android:layout_marginBottom="8dp"/>
-            <Button
-                android:id="@+id/btnPlay"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="▶️ OUVIR MIX"
-                android:backgroundTint="#FF9800"
-                android:textColor="#FFFFFF"
-                android:visibility="gone"
-                android:layout_marginBottom="8dp"/>
-            <SeekBar
-                android:id="@+id/seekBar"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- ===== PAINEL DE STEMS (aparece após separação) ===== -->
+            <LinearLayout
+                android:id="@+id/panelStems"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:visibility="gone"
-                android:layout_marginBottom="16dp"/>
-            <Button
-                android:id="@+id/btnDownload"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="⬇️ Baixar Mix"
-                android:backgroundTint="#03DAC6"
-                android:textColor="#000000"
-                android:visibility="gone"/>
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🎚️ Ouça e escolha as faixas:"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp"/>
+
+                <!-- VOCALS -->
+                <LinearLayout
+                    android:id="@+id/rowVocals"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="#1E1E1E"
+                    android:padding="10dp"
+                    android:layout_marginBottom="6dp">
+
+                    <CheckBox
+                        android:id="@+id/cbVocals"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:buttonTint="#BB86FC"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🎤 Vocals"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:layout_marginStart="8dp"/>
+
+                    <Button
+                        android:id="@+id/btnPlayVocals"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="▶"
+                        android:backgroundTint="#FF9800"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"/>
+                </LinearLayout>
+
+                <!-- DRUMS -->
+                <LinearLayout
+                    android:id="@+id/rowDrums"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="#1E1E1E"
+                    android:padding="10dp"
+                    android:layout_marginBottom="6dp">
+
+                    <CheckBox
+                        android:id="@+id/cbDrums"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:buttonTint="#BB86FC"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🥁 Drums"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:layout_marginStart="8dp"/>
+
+                    <Button
+                        android:id="@+id/btnPlayDrums"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="▶"
+                        android:backgroundTint="#FF9800"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"/>
+                </LinearLayout>
+
+                <!-- BASS -->
+                <LinearLayout
+                    android:id="@+id/rowBass"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="#1E1E1E"
+                    android:padding="10dp"
+                    android:layout_marginBottom="6dp">
+
+                    <CheckBox
+                        android:id="@+id/cbBass"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:buttonTint="#BB86FC"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🎸 Bass"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:layout_marginStart="8dp"/>
+
+                    <Button
+                        android:id="@+id/btnPlayBass"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="▶"
+                        android:backgroundTint="#FF9800"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"/>
+                </LinearLayout>
+
+                <!-- PIANO -->
+                <LinearLayout
+                    android:id="@+id/rowPiano"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="#1E1E1E"
+                    android:padding="10dp"
+                    android:layout_marginBottom="6dp">
+
+                    <CheckBox
+                        android:id="@+id/cbPiano"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:buttonTint="#BB86FC"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🎹 Piano"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:layout_marginStart="8dp"/>
+
+                    <Button
+                        android:id="@+id/btnPlayPiano"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="▶"
+                        android:backgroundTint="#FF9800"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"/>
+                </LinearLayout>
+
+                <!-- GUITAR RHYTHM -->
+                <LinearLayout
+                    android:id="@+id/rowGuitarRhythm"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="#1E1E1E"
+                    android:padding="10dp"
+                    android:layout_marginBottom="6dp">
+
+                    <CheckBox
+                        android:id="@+id/cbGuitarRhythm"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:buttonTint="#BB86FC"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🎸 Guitar Rhythm"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:layout_marginStart="8dp"/>
+
+                    <Button
+                        android:id="@+id/btnPlayGuitarRhythm"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="▶"
+                        android:backgroundTint="#FF9800"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"/>
+                </LinearLayout>
+
+                <!-- GUITAR LEAD -->
+                <LinearLayout
+                    android:id="@+id/rowGuitarLead"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="#1E1E1E"
+                    android:padding="10dp"
+                    android:layout_marginBottom="6dp">
+
+                    <CheckBox
+                        android:id="@+id/cbGuitarLead"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:buttonTint="#BB86FC"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🎸 Guitar Lead (Solo)"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:layout_marginStart="8dp"/>
+
+                    <Button
+                        android:id="@+id/btnPlayGuitarLead"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="▶"
+                        android:backgroundTint="#FF9800"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"/>
+                </LinearLayout>
+
+                <!-- SYNTH -->
+                <LinearLayout
+                    android:id="@+id/rowSynth"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="#1E1E1E"
+                    android:padding="10dp"
+                    android:layout_marginBottom="6dp">
+
+                    <CheckBox
+                        android:id="@+id/cbSynth"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:buttonTint="#BB86FC"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🎛️ Synth/Pad"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:layout_marginStart="8dp"/>
+
+                    <Button
+                        android:id="@+id/btnPlaySynth"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="▶"
+                        android:backgroundTint="#FF9800"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"/>
+                </LinearLayout>
+
+                <!-- STRINGS -->
+                <LinearLayout
+                    android:id="@+id/rowStrings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="#1E1E1E"
+                    android:padding="10dp"
+                    android:layout_marginBottom="6dp">
+
+                    <CheckBox
+                        android:id="@+id/cbStrings"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:buttonTint="#BB86FC"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🎻 Strings"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:layout_marginStart="8dp"/>
+
+                    <Button
+                        android:id="@+id/btnPlayStrings"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="▶"
+                        android:backgroundTint="#FF9800"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"/>
+                </LinearLayout>
+
+                <!-- RESIDUAL -->
+                <LinearLayout
+                    android:id="@+id/rowResidual"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="#1E1E1E"
+                    android:padding="10dp"
+                    android:layout_marginBottom="16dp">
+
+                    <CheckBox
+                        android:id="@+id/cbResidual"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:buttonTint="#BB86FC"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🎵 Residual"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:layout_marginStart="8dp"/>
+
+                    <Button
+                        android:id="@+id/btnPlayResidual"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="▶"
+                        android:backgroundTint="#FF9800"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"/>
+                </LinearLayout>
+
+                <!-- SeekBar do stem em preview -->
+                <SeekBar
+                    android:id="@+id/seekBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:layout_marginBottom="16dp"/>
+
+                <!-- Botão Salvar Mix -->
+                <Button
+                    android:id="@+id/btnDownload"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="💾 Salvar Mix"
+                    android:backgroundTint="#03DAC6"
+                    android:textColor="#000000"
+                    android:visibility="gone"
+                    android:layout_marginBottom="8dp"/>
+
+            </LinearLayout>
+            <!-- fim panelStems -->
+
         </LinearLayout>
     </ScrollView>
+
+    <!-- ===== ABA VIDEOMIX ===== -->
     <ScrollView
         android:id="@+id/scrollVideoMix"
         android:layout_width="match_parent"
