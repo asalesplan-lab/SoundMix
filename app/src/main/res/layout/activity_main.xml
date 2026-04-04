@@ -38,7 +38,6 @@
                 android:gravity="center"
                 android:layout_marginBottom="24dp"/>
 
-            <!-- Botão selecionar música -->
             <Button
                 android:id="@+id/btnSelectAudio"
                 android:layout_width="match_parent"
@@ -57,7 +56,6 @@
                 android:gravity="center"
                 android:layout_marginBottom="24dp"/>
 
-            <!-- Botão separar -->
             <Button
                 android:id="@+id/btnSeparate"
                 android:layout_width="match_parent"
@@ -67,7 +65,6 @@
                 android:textColor="#FFFFFF"
                 android:layout_marginBottom="16dp"/>
 
-            <!-- Progress + Status -->
             <ProgressBar
                 android:id="@+id/progressBar"
                 android:layout_width="match_parent"
@@ -84,7 +81,7 @@
                 android:gravity="center"
                 android:layout_marginBottom="16dp"/>
 
-            <!-- ===== PAINEL DE STEMS (aparece após separação) ===== -->
+            <!-- ===== PAINEL DE STEMS ===== -->
             <LinearLayout
                 android:id="@+id/panelStems"
                 android:layout_width="match_parent"
@@ -95,363 +92,586 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="🎚️ Ouça e escolha as faixas:"
+                    android:text="🎚️ Ouça, nomeie e escolha as faixas:"
                     android:textColor="#FFFFFF"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="12dp"/>
 
-                <!-- VOCALS -->
+                <!-- STEM 1 -->
                 <LinearLayout
-                    android:id="@+id/rowVocals"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
+                    android:orientation="vertical"
                     android:background="#1E1E1E"
                     android:padding="10dp"
-                    android:layout_marginBottom="6dp">
-
-                    <CheckBox
-                        android:id="@+id/cbVocals"
-                        android:layout_width="wrap_content"
+                    android:layout_marginBottom="8dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:buttonTint="#BB86FC"/>
-
-                    <TextView
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <CheckBox
+                            android:id="@+id/cbStem1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:buttonTint="#BB86FC"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Stem 1"
+                            android:textColor="#BB86FC"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:layout_marginStart="8dp"/>
+                        <Button
+                            android:id="@+id/btnPlayStem1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="▶"
+                            android:backgroundTint="#FF9800"
+                            android:textColor="#FFFFFF"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"/>
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/seekStem1"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🎤 Vocals"
+                        android:layout_marginTop="6dp"
+                        android:progressTint="#FF9800"
+                        android:thumbTint="#FF9800"/>
+                    <EditText
+                        android:id="@+id/etNameStem1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nome desta faixa (ex: Vocals, Guitarra...)"
+                        android:textColorHint="#666666"
                         android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:layout_marginStart="8dp"/>
-
-                    <Button
-                        android:id="@+id/btnPlayVocals"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="▶"
-                        android:backgroundTint="#FF9800"
-                        android:textColor="#FFFFFF"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp"/>
+                        android:backgroundTint="#444444"
+                        android:layout_marginTop="6dp"
+                        android:inputType="text"/>
                 </LinearLayout>
 
-                <!-- DRUMS -->
+                <!-- STEM 2 -->
                 <LinearLayout
-                    android:id="@+id/rowDrums"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
+                    android:orientation="vertical"
                     android:background="#1E1E1E"
                     android:padding="10dp"
-                    android:layout_marginBottom="6dp">
-
-                    <CheckBox
-                        android:id="@+id/cbDrums"
-                        android:layout_width="wrap_content"
+                    android:layout_marginBottom="8dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:buttonTint="#BB86FC"/>
-
-                    <TextView
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <CheckBox
+                            android:id="@+id/cbStem2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:buttonTint="#BB86FC"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Stem 2"
+                            android:textColor="#BB86FC"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:layout_marginStart="8dp"/>
+                        <Button
+                            android:id="@+id/btnPlayStem2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="▶"
+                            android:backgroundTint="#FF9800"
+                            android:textColor="#FFFFFF"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"/>
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/seekStem2"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🥁 Drums"
+                        android:layout_marginTop="6dp"
+                        android:progressTint="#FF9800"
+                        android:thumbTint="#FF9800"/>
+                    <EditText
+                        android:id="@+id/etNameStem2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nome desta faixa (ex: Bateria, Baixo...)"
+                        android:textColorHint="#666666"
                         android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:layout_marginStart="8dp"/>
-
-                    <Button
-                        android:id="@+id/btnPlayDrums"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="▶"
-                        android:backgroundTint="#FF9800"
-                        android:textColor="#FFFFFF"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp"/>
+                        android:backgroundTint="#444444"
+                        android:layout_marginTop="6dp"
+                        android:inputType="text"/>
                 </LinearLayout>
 
-                <!-- BASS -->
+                <!-- STEM 3 -->
                 <LinearLayout
-                    android:id="@+id/rowBass"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
+                    android:orientation="vertical"
                     android:background="#1E1E1E"
                     android:padding="10dp"
-                    android:layout_marginBottom="6dp">
-
-                    <CheckBox
-                        android:id="@+id/cbBass"
-                        android:layout_width="wrap_content"
+                    android:layout_marginBottom="8dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:buttonTint="#BB86FC"/>
-
-                    <TextView
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <CheckBox
+                            android:id="@+id/cbStem3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:buttonTint="#BB86FC"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Stem 3"
+                            android:textColor="#BB86FC"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:layout_marginStart="8dp"/>
+                        <Button
+                            android:id="@+id/btnPlayStem3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="▶"
+                            android:backgroundTint="#FF9800"
+                            android:textColor="#FFFFFF"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"/>
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/seekStem3"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🎸 Bass"
+                        android:layout_marginTop="6dp"
+                        android:progressTint="#FF9800"
+                        android:thumbTint="#FF9800"/>
+                    <EditText
+                        android:id="@+id/etNameStem3"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nome desta faixa"
+                        android:textColorHint="#666666"
                         android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:layout_marginStart="8dp"/>
-
-                    <Button
-                        android:id="@+id/btnPlayBass"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="▶"
-                        android:backgroundTint="#FF9800"
-                        android:textColor="#FFFFFF"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp"/>
+                        android:backgroundTint="#444444"
+                        android:layout_marginTop="6dp"
+                        android:inputType="text"/>
                 </LinearLayout>
 
-                <!-- PIANO -->
+                <!-- STEM 4 -->
                 <LinearLayout
-                    android:id="@+id/rowPiano"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
+                    android:orientation="vertical"
                     android:background="#1E1E1E"
                     android:padding="10dp"
-                    android:layout_marginBottom="6dp">
-
-                    <CheckBox
-                        android:id="@+id/cbPiano"
-                        android:layout_width="wrap_content"
+                    android:layout_marginBottom="8dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:buttonTint="#BB86FC"/>
-
-                    <TextView
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <CheckBox
+                            android:id="@+id/cbStem4"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:buttonTint="#BB86FC"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Stem 4"
+                            android:textColor="#BB86FC"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:layout_marginStart="8dp"/>
+                        <Button
+                            android:id="@+id/btnPlayStem4"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="▶"
+                            android:backgroundTint="#FF9800"
+                            android:textColor="#FFFFFF"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"/>
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/seekStem4"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🎹 Piano"
+                        android:layout_marginTop="6dp"
+                        android:progressTint="#FF9800"
+                        android:thumbTint="#FF9800"/>
+                    <EditText
+                        android:id="@+id/etNameStem4"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nome desta faixa"
+                        android:textColorHint="#666666"
                         android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:layout_marginStart="8dp"/>
-
-                    <Button
-                        android:id="@+id/btnPlayPiano"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="▶"
-                        android:backgroundTint="#FF9800"
-                        android:textColor="#FFFFFF"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp"/>
+                        android:backgroundTint="#444444"
+                        android:layout_marginTop="6dp"
+                        android:inputType="text"/>
                 </LinearLayout>
 
-                <!-- GUITAR RHYTHM -->
+                <!-- STEM 5 -->
                 <LinearLayout
-                    android:id="@+id/rowGuitarRhythm"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
+                    android:orientation="vertical"
                     android:background="#1E1E1E"
                     android:padding="10dp"
-                    android:layout_marginBottom="6dp">
-
-                    <CheckBox
-                        android:id="@+id/cbGuitarRhythm"
-                        android:layout_width="wrap_content"
+                    android:layout_marginBottom="8dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:buttonTint="#BB86FC"/>
-
-                    <TextView
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <CheckBox
+                            android:id="@+id/cbStem5"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:buttonTint="#BB86FC"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Stem 5"
+                            android:textColor="#BB86FC"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:layout_marginStart="8dp"/>
+                        <Button
+                            android:id="@+id/btnPlayStem5"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="▶"
+                            android:backgroundTint="#FF9800"
+                            android:textColor="#FFFFFF"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"/>
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/seekStem5"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🎸 Guitar Rhythm"
+                        android:layout_marginTop="6dp"
+                        android:progressTint="#FF9800"
+                        android:thumbTint="#FF9800"/>
+                    <EditText
+                        android:id="@+id/etNameStem5"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nome desta faixa"
+                        android:textColorHint="#666666"
                         android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:layout_marginStart="8dp"/>
-
-                    <Button
-                        android:id="@+id/btnPlayGuitarRhythm"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="▶"
-                        android:backgroundTint="#FF9800"
-                        android:textColor="#FFFFFF"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp"/>
+                        android:backgroundTint="#444444"
+                        android:layout_marginTop="6dp"
+                        android:inputType="text"/>
                 </LinearLayout>
 
-                <!-- GUITAR LEAD -->
+                <!-- STEM 6 -->
                 <LinearLayout
-                    android:id="@+id/rowGuitarLead"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
+                    android:orientation="vertical"
                     android:background="#1E1E1E"
                     android:padding="10dp"
-                    android:layout_marginBottom="6dp">
-
-                    <CheckBox
-                        android:id="@+id/cbGuitarLead"
-                        android:layout_width="wrap_content"
+                    android:layout_marginBottom="8dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:buttonTint="#BB86FC"/>
-
-                    <TextView
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <CheckBox
+                            android:id="@+id/cbStem6"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:buttonTint="#BB86FC"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Stem 6"
+                            android:textColor="#BB86FC"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:layout_marginStart="8dp"/>
+                        <Button
+                            android:id="@+id/btnPlayStem6"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="▶"
+                            android:backgroundTint="#FF9800"
+                            android:textColor="#FFFFFF"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"/>
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/seekStem6"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🎸 Guitar Lead (Solo)"
+                        android:layout_marginTop="6dp"
+                        android:progressTint="#FF9800"
+                        android:thumbTint="#FF9800"/>
+                    <EditText
+                        android:id="@+id/etNameStem6"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nome desta faixa"
+                        android:textColorHint="#666666"
                         android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:layout_marginStart="8dp"/>
-
-                    <Button
-                        android:id="@+id/btnPlayGuitarLead"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="▶"
-                        android:backgroundTint="#FF9800"
-                        android:textColor="#FFFFFF"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp"/>
+                        android:backgroundTint="#444444"
+                        android:layout_marginTop="6dp"
+                        android:inputType="text"/>
                 </LinearLayout>
 
-                <!-- SYNTH -->
+                <!-- STEM 7 -->
                 <LinearLayout
-                    android:id="@+id/rowSynth"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
+                    android:orientation="vertical"
                     android:background="#1E1E1E"
                     android:padding="10dp"
-                    android:layout_marginBottom="6dp">
-
-                    <CheckBox
-                        android:id="@+id/cbSynth"
-                        android:layout_width="wrap_content"
+                    android:layout_marginBottom="8dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:buttonTint="#BB86FC"/>
-
-                    <TextView
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <CheckBox
+                            android:id="@+id/cbStem7"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:buttonTint="#BB86FC"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Stem 7"
+                            android:textColor="#BB86FC"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:layout_marginStart="8dp"/>
+                        <Button
+                            android:id="@+id/btnPlayStem7"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="▶"
+                            android:backgroundTint="#FF9800"
+                            android:textColor="#FFFFFF"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"/>
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/seekStem7"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🎛️ Synth/Pad"
+                        android:layout_marginTop="6dp"
+                        android:progressTint="#FF9800"
+                        android:thumbTint="#FF9800"/>
+                    <EditText
+                        android:id="@+id/etNameStem7"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nome desta faixa"
+                        android:textColorHint="#666666"
                         android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:layout_marginStart="8dp"/>
-
-                    <Button
-                        android:id="@+id/btnPlaySynth"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="▶"
-                        android:backgroundTint="#FF9800"
-                        android:textColor="#FFFFFF"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp"/>
+                        android:backgroundTint="#444444"
+                        android:layout_marginTop="6dp"
+                        android:inputType="text"/>
                 </LinearLayout>
 
-                <!-- STRINGS -->
+                <!-- STEM 8 -->
                 <LinearLayout
-                    android:id="@+id/rowStrings"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
+                    android:orientation="vertical"
                     android:background="#1E1E1E"
                     android:padding="10dp"
-                    android:layout_marginBottom="6dp">
-
-                    <CheckBox
-                        android:id="@+id/cbStrings"
-                        android:layout_width="wrap_content"
+                    android:layout_marginBottom="8dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:buttonTint="#BB86FC"/>
-
-                    <TextView
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <CheckBox
+                            android:id="@+id/cbStem8"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:buttonTint="#BB86FC"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Stem 8"
+                            android:textColor="#BB86FC"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:layout_marginStart="8dp"/>
+                        <Button
+                            android:id="@+id/btnPlayStem8"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="▶"
+                            android:backgroundTint="#FF9800"
+                            android:textColor="#FFFFFF"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"/>
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/seekStem8"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🎻 Strings"
+                        android:layout_marginTop="6dp"
+                        android:progressTint="#FF9800"
+                        android:thumbTint="#FF9800"/>
+                    <EditText
+                        android:id="@+id/etNameStem8"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nome desta faixa"
+                        android:textColorHint="#666666"
                         android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:layout_marginStart="8dp"/>
-
-                    <Button
-                        android:id="@+id/btnPlayStrings"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="▶"
-                        android:backgroundTint="#FF9800"
-                        android:textColor="#FFFFFF"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp"/>
+                        android:backgroundTint="#444444"
+                        android:layout_marginTop="6dp"
+                        android:inputType="text"/>
                 </LinearLayout>
 
-                <!-- RESIDUAL -->
+                <!-- STEM 9 -->
                 <LinearLayout
-                    android:id="@+id/rowResidual"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
+                    android:orientation="vertical"
                     android:background="#1E1E1E"
                     android:padding="10dp"
                     android:layout_marginBottom="16dp">
-
-                    <CheckBox
-                        android:id="@+id/cbResidual"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:buttonTint="#BB86FC"/>
-
-                    <TextView
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <CheckBox
+                            android:id="@+id/cbStem9"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:buttonTint="#BB86FC"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Stem 9"
+                            android:textColor="#BB86FC"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:layout_marginStart="8dp"/>
+                        <Button
+                            android:id="@+id/btnPlayStem9"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="▶"
+                            android:backgroundTint="#FF9800"
+                            android:textColor="#FFFFFF"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"/>
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/seekStem9"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🎵 Residual"
+                        android:layout_marginTop="6dp"
+                        android:progressTint="#FF9800"
+                        android:thumbTint="#FF9800"/>
+                    <EditText
+                        android:id="@+id/etNameStem9"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nome desta faixa"
+                        android:textColorHint="#666666"
                         android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:layout_marginStart="8dp"/>
-
-                    <Button
-                        android:id="@+id/btnPlayResidual"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="▶"
-                        android:backgroundTint="#FF9800"
-                        android:textColor="#FFFFFF"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp"/>
+                        android:backgroundTint="#444444"
+                        android:layout_marginTop="6dp"
+                        android:inputType="text"/>
                 </LinearLayout>
 
-                <!-- SeekBar do stem em preview -->
+                <!-- Divisor -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#333333"
+                    android:layout_marginBottom="16dp"/>
+
+                <!-- Preview do Mix -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="👂 Veja como está ficando o mix:"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="10dp"/>
+
+                <Button
+                    android:id="@+id/btnPreviewMix"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="👂 Ouvir Mix"
+                    android:backgroundTint="#FF9800"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginBottom="8dp"/>
+
+                <ProgressBar
+                    android:id="@+id/progressMix"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:id="@+id/tvMixStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textColor="#1DB954"
+                    android:gravity="center"
+                    android:layout_marginBottom="8dp"/>
+
+                <Button
+                    android:id="@+id/btnPlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="▶️ PLAY"
+                    android:backgroundTint="#FF9800"
+                    android:textColor="#FFFFFF"
+                    android:visibility="gone"
+                    android:layout_marginBottom="4dp"/>
+
                 <SeekBar
                     android:id="@+id/seekBar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:progressTint="#BB86FC"
+                    android:thumbTint="#BB86FC"
                     android:visibility="gone"
                     android:layout_marginBottom="16dp"/>
 
-                <!-- Botão Salvar Mix -->
                 <Button
                     android:id="@+id/btnDownload"
                     android:layout_width="match_parent"
@@ -463,7 +683,6 @@
                     android:layout_marginBottom="8dp"/>
 
             </LinearLayout>
-            <!-- fim panelStems -->
 
         </LinearLayout>
     </ScrollView>
