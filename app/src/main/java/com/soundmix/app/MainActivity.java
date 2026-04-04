@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -73,8 +72,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int SAMPLE_RATE = 44100;
     private static final int BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLE_RATE,
         AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+    private static final int STEM_COUNT = 9;
 
-    // UI - Stem Separator
+    // Stem Separator UI
     private TextView tvFileName, tvStatus, tvMixStatus;
     private Button btnSelectAudio, btnSeparate, btnPreviewMix, btnDownload, btnPlay;
     private ProgressBar progressBar, progressMix;
@@ -83,8 +83,7 @@ public class MainActivity extends AppCompatActivity {
     private Uri selectedAudioUri;
     private OkHttpClient client;
 
-    // Stems - players, seekbars, checkboxes, nomes
-    private static final int STEM_COUNT = 9;
+    // Stems arrays
     private MediaPlayer[] stemPlayers = new MediaPlayer[STEM_COUNT];
     private String[] stemUrls = new String[STEM_COUNT];
     private Button[] btnPlayStems = new Button[STEM_COUNT];
@@ -92,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
     private CheckBox[] cbStems = new CheckBox[STEM_COUNT];
     private EditText[] etNameStems = new EditText[STEM_COUNT];
 
-    // Mix preview
+    // Mix
     private MediaPlayer mixPlayer;
     private byte[] mixBytes;
     private File tempMixFile;
@@ -134,67 +133,57 @@ public class MainActivity extends AppCompatActivity {
             .build();
         cameraExecutor = Executors.newSingleThreadExecutor();
 
-        // Stem Separator views
-        tvFileName       = findViewById(R.id.tvFileName);
-        tvStatus         = findViewById(R.id.tvStatus);
-        tvMixStatus      = findViewById(R.id.tvMixStatus);
-        btnSelectAudio   = findViewById(R.id.btnSelectAudio);
-        btnSeparate      = findViewById(R.id.btnSeparate);
-        btnPreviewMix    = findViewById(R.id.btnPreviewMix);
-        btnDownload      = findViewById(R.id.btnDownload);
-        btnPlay          = findViewById(R.id.btnPlay);
-        seekBar          = findViewById(R.id.seekBar);
-        progressBar      = findViewById(R.id.progressBar);
-        progressMix      = findViewById(R.id.progressMix);
-        panelStems       = findViewById(R.id.panelStems);
+        tvFileName    = findViewById(R.id.tvFileName);
+        tvStatus      = findViewById(R.id.tvStatus);
+        tvMixStatus   = findViewById(R.id.tvMixStatus);
+        btnSelectAudio = findViewById(R.id.btnSelectAudio);
+        btnSeparate   = findViewById(R.id.btnSeparate);
+        btnPreviewMix = findViewById(R.id.btnPreviewMix);
+        btnDownload   = findViewById(R.id.btnDownload);
+        btnPlay       = findViewById(R.id.btnPlay);
+        seekBar       = findViewById(R.id.seekBar);
+        progressBar   = findViewById(R.id.progressBar);
+        progressMix   = findViewById(R.id.progressMix);
+        panelStems    = findViewById(R.id.panelStems);
 
-        // Arrays de stems
-        int[] cbIds = {R.id.cbStem1, R.id.cbStem2, R.id.cbStem3, R.id.cbStem4, R.id.cbStem5,
-                       R.id.cbStem6, R.id.cbStem7, R.id.cbStem8, R.id.cbStem9};
-        int[] btnIds = {R.id.btnPlayStem1, R.id.btnPlayStem2, R.id.btnPlayStem3,
-                        R.id.btnPlayStem4, R.id.btnPlayStem5, R.id.btnPlayStem6,
-                        R.id.btnPlayStem7, R.id.btnPlayStem8, R.id.btnPlayStem9};
-        int[] seekIds = {R.id.seekStem1, R.id.seekStem2, R.id.seekStem3, R.id.seekStem4,
-                         R.id.seekStem5, R.id.seekStem6, R.id.seekStem7, R.id.seekStem8,
-                         R.id.seekStem9};
-        int[] etIds = {R.id.etNameStem1, R.id.etNameStem2, R.id.etNameStem3, R.id.etNameStem4,
-                       R.id.etNameStem5, R.id.etNameStem6, R.id.etNameStem7, R.id.etNameStem8,
-                       R.id.etNameStem9};
+        int[] cbIds   = {R.id.cbStem1,R.id.cbStem2,R.id.cbStem3,R.id.cbStem4,R.id.cbStem5,R.id.cbStem6,R.id.cbStem7,R.id.cbStem8,R.id.cbStem9};
+        int[] btnIds  = {R.id.btnPlayStem1,R.id.btnPlayStem2,R.id.btnPlayStem3,R.id.btnPlayStem4,R.id.btnPlayStem5,R.id.btnPlayStem6,R.id.btnPlayStem7,R.id.btnPlayStem8,R.id.btnPlayStem9};
+        int[] seekIds = {R.id.seekStem1,R.id.seekStem2,R.id.seekStem3,R.id.seekStem4,R.id.seekStem5,R.id.seekStem6,R.id.seekStem7,R.id.seekStem8,R.id.seekStem9};
+        int[] etIds   = {R.id.etNameStem1,R.id.etNameStem2,R.id.etNameStem3,R.id.etNameStem4,R.id.etNameStem5,R.id.etNameStem6,R.id.etNameStem7,R.id.etNameStem8,R.id.etNameStem9};
 
         for (int i = 0; i < STEM_COUNT; i++) {
-            cbStems[i]     = findViewById(cbIds[i]);
+            cbStems[i]      = findViewById(cbIds[i]);
             btnPlayStems[i] = findViewById(btnIds[i]);
-            seekStems[i]   = findViewById(seekIds[i]);
-            etNameStems[i] = findViewById(etIds[i]);
-            final int idx  = i;
+            seekStems[i]    = findViewById(seekIds[i]);
+            etNameStems[i]  = findViewById(etIds[i]);
+            final int idx   = i;
             btnPlayStems[i].setOnClickListener(v -> toggleStemPlay(idx));
             seekStems[i].setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
-                    if (fromUser && stemPlayers[idx] != null) stemPlayers[idx].seekTo(progress);
+                public void onProgressChanged(SeekBar s, int p, boolean fromUser) {
+                    if (fromUser && stemPlayers[idx] != null) stemPlayers[idx].seekTo(p);
                 }
                 public void onStartTrackingTouch(SeekBar s) {}
                 public void onStopTrackingTouch(SeekBar s) {}
             });
         }
 
-        // VideoMix views
-        tabLayout        = findViewById(R.id.tabLayout);
+        tabLayout         = findViewById(R.id.tabLayout);
         scrollStemSeparator = findViewById(R.id.scrollStemSeparator);
-        scrollVideoMix   = findViewById(R.id.scrollVideoMix);
-        btnSelectBacking = findViewById(R.id.btnSelectBacking);
-        btnRecord        = findViewById(R.id.btnRecord);
-        btnExportVideo   = findViewById(R.id.btnExportVideo);
-        btnFlipCamera    = findViewById(R.id.btnFlipCamera);
-        btnLatencyTest   = findViewById(R.id.btnLatencyTest);
-        tvBackingName    = findViewById(R.id.tvBackingName);
-        tvRecordStatus   = findViewById(R.id.tvRecordStatus);
-        tvLatency        = findViewById(R.id.tvLatency);
-        tvLatencyTest    = findViewById(R.id.tvLatencyTest);
+        scrollVideoMix    = findViewById(R.id.scrollVideoMix);
+        btnSelectBacking  = findViewById(R.id.btnSelectBacking);
+        btnRecord         = findViewById(R.id.btnRecord);
+        btnExportVideo    = findViewById(R.id.btnExportVideo);
+        btnFlipCamera     = findViewById(R.id.btnFlipCamera);
+        btnLatencyTest    = findViewById(R.id.btnLatencyTest);
+        tvBackingName     = findViewById(R.id.tvBackingName);
+        tvRecordStatus    = findViewById(R.id.tvRecordStatus);
+        tvLatency         = findViewById(R.id.tvLatency);
+        tvLatencyTest     = findViewById(R.id.tvLatencyTest);
         seekBackingVolume = findViewById(R.id.seekBackingVolume);
-        seekLatency      = findViewById(R.id.seekLatency);
-        cameraPreview    = findViewById(R.id.cameraPreview);
-        switchMonitor    = findViewById(R.id.switchMonitor);
-        radioGroupAudio  = findViewById(R.id.radioGroupAudio);
+        seekLatency       = findViewById(R.id.seekLatency);
+        cameraPreview     = findViewById(R.id.cameraPreview);
+        switchMonitor     = findViewById(R.id.switchMonitor);
+        radioGroupAudio   = findViewById(R.id.radioGroupAudio);
 
         requestPermissions();
         setupTabs();
@@ -220,14 +209,13 @@ public class MainActivity extends AppCompatActivity {
             public void onTabReselected(TabLayout.Tab tab) {}
         });
     }
-    
+
     private void setupListeners() {
         btnSelectAudio.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("audio/*");
             startActivityForResult(intent, PICK_AUDIO);
         });
-
         btnSeparate.setOnClickListener(v -> {
             if (selectedAudioUri == null) {
                 Toast.makeText(this, "Selecione uma música primeiro!", Toast.LENGTH_SHORT).show();
@@ -235,82 +223,52 @@ public class MainActivity extends AppCompatActivity {
             }
             separateStems();
         });
-
         btnPreviewMix.setOnClickListener(v -> generateMixPreview());
         btnDownload.setOnClickListener(v -> saveMix());
-
         btnPlay.setOnClickListener(v -> toggleMixPlay());
-
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
-                if (fromUser && mixPlayer != null) mixPlayer.seekTo(progress);
+            public void onProgressChanged(SeekBar s, int p, boolean fromUser) {
+                if (fromUser && mixPlayer != null) mixPlayer.seekTo(p);
             }
             public void onStartTrackingTouch(SeekBar s) {}
             public void onStopTrackingTouch(SeekBar s) {}
         });
-
         btnSelectBacking.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("audio/*");
             startActivityForResult(intent, PICK_BACKING);
         });
-
         btnRecord.setOnClickListener(v -> {
             if (isPreparing) cancelPreparation();
             else if (!isRecording) startPreparation();
             else stopRecording();
         });
-
-        btnFlipCamera.setOnClickListener(v -> {
-            useFrontCamera = !useFrontCamera;
-            startCamera();
-        });
-
+        btnFlipCamera.setOnClickListener(v -> { useFrontCamera = !useFrontCamera; startCamera(); });
         btnLatencyTest.setOnClickListener(v -> runDifferentialLatencyTest());
-
         radioGroupAudio.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.radioMicAndroid) {
-                selectedAudioSource = MediaRecorder.AudioSource.MIC;
-                tvLatencyTest.setText("🎤 Microfone do aparelho selecionado");
-            } else if (checkedId == R.id.radioMicBT) {
-                selectedAudioSource = MediaRecorder.AudioSource.MIC;
-                tvLatencyTest.setText("🎧 Bluetooth selecionado — use o Teste Diferencial!");
-            } else if (checkedId == R.id.radioMicWired) {
-                selectedAudioSource = MediaRecorder.AudioSource.MIC;
-                tvLatencyTest.setText("🔌 Entrada por fio selecionada");
-            } else if (checkedId == R.id.radioMicOTG) {
-                selectedAudioSource = MediaRecorder.AudioSource.MIC;
-                tvLatencyTest.setText("🎛️ OTG selecionado");
-            }
+            if (checkedId == R.id.radioMicAndroid) { selectedAudioSource = MediaRecorder.AudioSource.MIC; tvLatencyTest.setText("🎤 Microfone do aparelho selecionado"); }
+            else if (checkedId == R.id.radioMicBT) { selectedAudioSource = MediaRecorder.AudioSource.MIC; tvLatencyTest.setText("🎧 Bluetooth — use o Teste Diferencial!"); }
+            else if (checkedId == R.id.radioMicWired) { selectedAudioSource = MediaRecorder.AudioSource.MIC; tvLatencyTest.setText("🔌 Entrada por fio selecionada"); }
+            else if (checkedId == R.id.radioMicOTG) { selectedAudioSource = MediaRecorder.AudioSource.MIC; tvLatencyTest.setText("🎛️ OTG selecionado"); }
         });
-
         seekLatency.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
-                latencyMs = progress;
-                tvLatency.setText(progress + " ms");
-            }
+            public void onProgressChanged(SeekBar s, int p, boolean fromUser) { latencyMs = p; tvLatency.setText(p + " ms"); }
             public void onStartTrackingTouch(SeekBar s) {}
             public void onStopTrackingTouch(SeekBar s) {}
         });
-
         seekBackingVolume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
-                if (backingPlayer != null) {
-                    float vol = progress / 100f;
-                    backingPlayer.setVolume(vol, vol);
-                }
+            public void onProgressChanged(SeekBar s, int p, boolean fromUser) {
+                if (backingPlayer != null) { float v = p / 100f; backingPlayer.setVolume(v, v); }
             }
             public void onStartTrackingTouch(SeekBar s) {}
             public void onStopTrackingTouch(SeekBar s) {}
         });
-
         switchMonitor.setOnCheckedChangeListener((btn, isChecked) -> {
-            if (isChecked) startMonitoring();
-            else stopMonitoring();
+            if (isChecked) startMonitoring(); else stopMonitoring();
         });
     }
 
-    // ===================== SEPARAÇÃO DE STEMS =====================
+    // ===================== SEPARAÇÃO =====================
 
     private void separateStems() {
         progressBar.setVisibility(View.VISIBLE);
@@ -321,8 +279,6 @@ public class MainActivity extends AppCompatActivity {
         btnDownload.setVisibility(View.GONE);
         btnPlay.setVisibility(View.GONE);
         seekBar.setVisibility(View.GONE);
-
-        // Para players anteriores
         stopAllStemPlayers();
 
         new Thread(() -> {
@@ -333,7 +289,6 @@ public class MainActivity extends AppCompatActivity {
 
                 runOnUiThread(() -> tvStatus.setText("Fazendo upload..."));
 
-                // Upload do arquivo
                 RequestBody uploadBody = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
                     .addFormDataPart("files", "audio.mp3",
@@ -349,16 +304,13 @@ public class MainActivity extends AppCompatActivity {
                 JSONArray uploadedFiles = new JSONArray(uploadStr);
                 String uploadedPath = uploadedFiles.getString(0);
 
-                runOnUiThread(() -> tvStatus.setText("Separando stems... (pode levar alguns minutos)"));
+                runOnUiThread(() -> tvStatus.setText("Separando stems... (aguarde)"));
 
-                // Chama endpoint /separate
                 JSONObject fileData = new JSONObject();
                 fileData.put("path", uploadedPath);
                 fileData.put("meta", new JSONObject("{\"_type\":\"gradio.FileData\"}"));
-
                 JSONArray dataArray = new JSONArray();
                 dataArray.put(fileData);
-
                 JSONObject body = new JSONObject();
                 body.put("data", dataArray);
 
@@ -376,7 +328,6 @@ public class MainActivity extends AppCompatActivity {
 
                 runOnUiThread(() -> tvStatus.setText("Aguardando resultado..."));
 
-                // Aguarda resultado SSE
                 Request resultRequest = new Request.Builder()
                     .url(BASE_URL + "/gradio_api/call/separate/" + eventId)
                     .get().build();
@@ -393,9 +344,6 @@ public class MainActivity extends AppCompatActivity {
                 if (dataLine == null) throw new Exception("SSE inválido: " + resultStr.substring(0, Math.min(300, resultStr.length())));
 
                 JSONArray resultData = new JSONArray(dataLine);
-
-                // Processa os 9 stems (últimos itens antes do status)
-                // Resultado: [stem1, stem2, ..., stem9, status_text]
                 for (int i = 0; i < STEM_COUNT; i++) {
                     if (i < resultData.length() - 1) {
                         Object item = resultData.get(i);
@@ -403,9 +351,7 @@ public class MainActivity extends AppCompatActivity {
                             JSONObject stemObj = (JSONObject) item;
                             String url = stemObj.optString("url", "");
                             String path = stemObj.optString("path", "");
-                            if (url.isEmpty() && !path.isEmpty()) {
-                                url = BASE_URL + "/gradio_api/file=" + path;
-                            }
+                            if (url.isEmpty() && !path.isEmpty()) url = BASE_URL + "/gradio_api/file=" + path;
                             stemUrls[i] = url.isEmpty() ? null : url;
                         } else {
                             stemUrls[i] = null;
@@ -421,16 +367,12 @@ public class MainActivity extends AppCompatActivity {
                     panelStems.setVisibility(View.VISIBLE);
                     btnPreviewMix.setVisibility(View.VISIBLE);
                     btnSeparate.setEnabled(true);
-
-                    // Mostra/oculta linhas de stem conforme disponibilidade
                     for (int i = 0; i < STEM_COUNT; i++) {
                         boolean available = stemUrls[i] != null;
                         btnPlayStems[i].setEnabled(available);
                         cbStems[i].setEnabled(available);
                         cbStems[i].setChecked(available);
-                        if (!available) {
-                            etNameStems[i].setHint("(stem não disponível)");
-                        }
+                        if (!available) etNameStems[i].setHint("(stem não disponível)");
                     }
                 });
 
@@ -442,40 +384,33 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         }).start();
-        
+    }
+
     // ===================== PLAYERS DE STEMS =====================
 
     private void toggleStemPlay(int idx) {
         if (stemUrls[idx] == null) return;
-
-        // Para todos os outros stems
         for (int i = 0; i < STEM_COUNT; i++) {
             if (i != idx && stemPlayers[i] != null && stemPlayers[i].isPlaying()) {
                 stemPlayers[i].pause();
                 btnPlayStems[i].setText("▶");
             }
         }
-        // Para o mix se estiver tocando
         if (mixPlayer != null && mixPlayer.isPlaying()) {
             mixPlayer.pause();
             btnPlay.setText("▶️ PLAY");
         }
-
         if (stemPlayers[idx] != null && stemPlayers[idx].isPlaying()) {
             stemPlayers[idx].pause();
             btnPlayStems[idx].setText("▶");
             return;
         }
-
-        // Se já tem player carregado, apenas resume
         if (stemPlayers[idx] != null) {
             stemPlayers[idx].start();
             btnPlayStems[idx].setText("⏸");
             updateStemSeekBar(idx);
             return;
         }
-
-        // Carrega o stem pela URL
         btnPlayStems[idx].setEnabled(false);
         btnPlayStems[idx].setText("...");
         new Thread(() -> {
@@ -483,12 +418,10 @@ public class MainActivity extends AppCompatActivity {
                 Request req = new Request.Builder().url(stemUrls[idx]).get().build();
                 Response resp = client.newCall(req).execute();
                 byte[] bytes = resp.body().bytes();
-
                 File tmp = File.createTempFile("stem_" + idx, ".mp3", getCacheDir());
                 FileOutputStream fos = new FileOutputStream(tmp);
                 fos.write(bytes);
                 fos.close();
-
                 MediaPlayer mp = new MediaPlayer();
                 mp.setDataSource(tmp.getAbsolutePath());
                 mp.prepare();
@@ -496,9 +429,7 @@ public class MainActivity extends AppCompatActivity {
                     btnPlayStems[idx].setText("▶");
                     seekStems[idx].setProgress(0);
                 }));
-
                 stemPlayers[idx] = mp;
-
                 runOnUiThread(() -> {
                     seekStems[idx].setMax(mp.getDuration());
                     mp.start();
@@ -506,12 +437,11 @@ public class MainActivity extends AppCompatActivity {
                     btnPlayStems[idx].setEnabled(true);
                     updateStemSeekBar(idx);
                 });
-
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     btnPlayStems[idx].setText("▶");
                     btnPlayStems[idx].setEnabled(true);
-                    Toast.makeText(this, "Erro ao carregar stem " + (idx + 1) + ": " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Erro stem " + (idx+1) + ": " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
             }
         }).start();
@@ -529,29 +459,22 @@ public class MainActivity extends AppCompatActivity {
 
     private void stopAllStemPlayers() {
         for (int i = 0; i < STEM_COUNT; i++) {
-            if (stemPlayers[i] != null) {
-                stemPlayers[i].release();
-                stemPlayers[i] = null;
-            }
+            if (stemPlayers[i] != null) { stemPlayers[i].release(); stemPlayers[i] = null; }
             stemUrls[i] = null;
         }
     }
 
-    // ===================== PREVIEW E GERAÇÃO DO MIX =====================
+    // ===================== MIX =====================
 
     private void generateMixPreview() {
-        // Coleta stems selecionados
         List<String> selectedUrls = new ArrayList<>();
         for (int i = 0; i < STEM_COUNT; i++) {
-            if (cbStems[i].isChecked() && stemUrls[i] != null) {
-                selectedUrls.add(stemUrls[i]);
-            }
+            if (cbStems[i].isChecked() && stemUrls[i] != null) selectedUrls.add(stemUrls[i]);
         }
         if (selectedUrls.isEmpty()) {
             Toast.makeText(this, "Selecione pelo menos uma faixa!", Toast.LENGTH_SHORT).show();
             return;
         }
-
         progressMix.setVisibility(View.VISIBLE);
         btnPreviewMix.setEnabled(false);
         tvMixStatus.setText("Gerando mix...");
@@ -561,22 +484,13 @@ public class MainActivity extends AppCompatActivity {
 
         new Thread(() -> {
             try {
-                // Faz download dos stems selecionados e envia pro endpoint /mix
-                MultipartBody.Builder multipart = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM);
-
-                // Monta JSON com os paths dos stems selecionados para o backend mixar
-                // Envia via gradio API: chama endpoint "mix" com os arquivos
-                // Estratégia: re-envia os bytes de cada stem selecionado
-
-                // Upload de cada stem selecionado
                 List<String> uploadedPaths = new ArrayList<>();
                 for (int i = 0; i < selectedUrls.size(); i++) {
-                    runOnUiThread(() -> tvMixStatus.setText("Preparando faixas... (" + uploadedPaths.size() + "/" + selectedUrls.size() + ")"));
+                    final int fi = i;
+                    runOnUiThread(() -> tvMixStatus.setText("Preparando faixas... (" + (fi+1) + "/" + selectedUrls.size() + ")"));
                     Request req = new Request.Builder().url(selectedUrls.get(i)).get().build();
                     Response resp = client.newCall(req).execute();
                     byte[] bytes = resp.body().bytes();
-
                     RequestBody uploadBody = new MultipartBody.Builder()
                         .setType(MultipartBody.FORM)
                         .addFormDataPart("files", "stem_" + i + ".mp3",
@@ -586,14 +500,12 @@ public class MainActivity extends AppCompatActivity {
                         .url(BASE_URL + "/gradio_api/upload")
                         .post(uploadBody).build();
                     Response uploadResp = client.newCall(uploadReq).execute();
-                    String uploadStr = uploadResp.body().string();
-                    JSONArray arr = new JSONArray(uploadStr);
+                    JSONArray arr = new JSONArray(uploadResp.body().string());
                     uploadedPaths.add(arr.getString(0));
                 }
 
                 runOnUiThread(() -> tvMixStatus.setText("Mixando faixas..."));
 
-                // Monta payload com 9 slots (null para não selecionados)
                 JSONArray dataArray = new JSONArray();
                 int uploadIdx = 0;
                 for (int i = 0; i < STEM_COUNT; i++) {
@@ -607,7 +519,6 @@ public class MainActivity extends AppCompatActivity {
                         dataArray.put(JSONObject.NULL);
                     }
                 }
-
                 JSONObject body = new JSONObject();
                 body.put("data", dataArray);
 
@@ -620,7 +531,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!mixResponse.isSuccessful()) throw new Exception("Mix falhou: " + mixStr);
 
                 JSONObject mixJson = new JSONObject(mixStr);
-                if (!mixJson.has("event_id")) throw new Exception("Sem event_id: " + mixStr);
+                if (!mixJson.has("event_id")) throw new Exception("Sem event_id mix");
                 String eventId = mixJson.getString("event_id");
 
                 Request resultRequest = new Request.Builder()
@@ -642,13 +553,10 @@ public class MainActivity extends AppCompatActivity {
                 JSONObject audioResult = resultData.getJSONObject(0);
                 String resultUrl = audioResult.optString("url", "");
                 String resultPath = audioResult.optString("path", "");
-                if (resultUrl.isEmpty() && !resultPath.isEmpty()) {
-                    resultUrl = BASE_URL + "/gradio_api/file=" + resultPath;
-                }
+                if (resultUrl.isEmpty() && !resultPath.isEmpty()) resultUrl = BASE_URL + "/gradio_api/file=" + resultPath;
 
                 Request dlReq = new Request.Builder().url(resultUrl).get().build();
-                Response dlResp = client.newCall(dlReq).execute();
-                mixBytes = dlResp.body().bytes();
+                mixBytes = client.newCall(dlReq).execute().body().bytes();
 
                 tempMixFile = File.createTempFile("soundmix_preview", ".mp3", getCacheDir());
                 FileOutputStream fos = new FileOutputStream(tempMixFile);
@@ -691,7 +599,6 @@ public class MainActivity extends AppCompatActivity {
             mixPlayer.pause();
             btnPlay.setText("▶️ PLAY");
         } else {
-            // Para stems se estiver tocando
             for (int i = 0; i < STEM_COUNT; i++) {
                 if (stemPlayers[i] != null && stemPlayers[i].isPlaying()) {
                     stemPlayers[i].pause();
@@ -700,18 +607,14 @@ public class MainActivity extends AppCompatActivity {
             }
             mixPlayer.start();
             btnPlay.setText("⏸️ PAUSAR");
-            updateMixSeekBar();
+            new Thread(() -> {
+                while (mixPlayer != null && mixPlayer.isPlaying()) {
+                    final int pos = mixPlayer.getCurrentPosition();
+                    runOnUiThread(() -> seekBar.setProgress(pos));
+                    try { Thread.sleep(300); } catch (Exception e) { break; }
+                }
+            }).start();
         }
-    }
-
-    private void updateMixSeekBar() {
-        new Thread(() -> {
-            while (mixPlayer != null && mixPlayer.isPlaying()) {
-                final int pos = mixPlayer.getCurrentPosition();
-                runOnUiThread(() -> seekBar.setProgress(pos));
-                try { Thread.sleep(300); } catch (Exception e) { break; }
-            }
-        }).start();
     }
 
     private void saveMix() {
@@ -723,55 +626,38 @@ public class MainActivity extends AppCompatActivity {
             FileOutputStream fos = new FileOutputStream(file);
             fos.write(mixBytes);
             fos.close();
-            tvMixStatus.setText("💾 Salvo em: " + file.getName());
+            tvMixStatus.setText("💾 Salvo: " + file.getName());
             Toast.makeText(this, "Mix salvo na pasta Music!", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(this, "Erro ao salvar: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
-    
+
     // ===================== VIDEOMIX =====================
 
     private void startPreparation() {
         isPreparing = true;
         btnRecord.setText("❌ CANCELAR");
         btnFlipCamera.setEnabled(false);
-        tvRecordStatus.setText("⏳ Prepare-se! Ajuste-se e ajuste sua câmera... 15s");
         countDownTimer = new CountDownTimer(15000, 1000) {
-            public void onTick(long ms) {
-                long s = ms / 1000 + 1;
-                tvRecordStatus.setText("⏳ Prepare-se! Ajuste-se e ajuste sua câmera... " + s + "s");
-            }
+            public void onTick(long ms) { tvRecordStatus.setText("⏳ Prepare-se! " + (ms/1000+1) + "s"); }
             public void onFinish() { startPreviewPhase(); }
         }.start();
     }
 
     private void startPreviewPhase() {
-        tvRecordStatus.setText("🎵 Treine! Prévia tocando... 30s");
         startBackingTrack();
         countDownTimer = new CountDownTimer(30000, 1000) {
-            public void onTick(long ms) {
-                long s = ms / 1000 + 1;
-                tvRecordStatus.setText("🎵 Treine! Prévia tocando... " + s + "s");
-            }
-            public void onFinish() {
-                stopBackingTrack();
-                startFinalCountdown();
-            }
+            public void onTick(long ms) { tvRecordStatus.setText("🎵 Treine! Prévia tocando... " + (ms/1000+1) + "s"); }
+            public void onFinish() { stopBackingTrack(); startFinalCountdown(); }
         }.start();
     }
 
     private void startFinalCountdown() {
         playBeep();
         countDownTimer = new CountDownTimer(5000, 1000) {
-            public void onTick(long ms) {
-                long s = ms / 1000 + 1;
-                tvRecordStatus.setText("🔴 Gravando em " + s + "s...");
-            }
-            public void onFinish() {
-                isPreparing = false;
-                startRecording();
-            }
+            public void onTick(long ms) { tvRecordStatus.setText("🔴 Gravando em " + (ms/1000+1) + "s..."); }
+            public void onFinish() { isPreparing = false; startRecording(); }
         }.start();
     }
 
@@ -789,15 +675,12 @@ public class MainActivity extends AppCompatActivity {
     private void playBeep() {
         new Thread(() -> {
             try {
-                int sr = 44100;
-                int duration = sr / 4;
+                int sr = 44100, duration = sr / 4;
                 short[] samples = new short[duration];
-                for (int i = 0; i < duration; i++) {
+                for (int i = 0; i < duration; i++)
                     samples[i] = (short)(Short.MAX_VALUE * Math.sin(2 * Math.PI * 880 * i / sr));
-                }
                 AudioTrack beepTrack = new AudioTrack(AudioManager.STREAM_MUSIC, sr,
-                    AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
-                    duration * 2, AudioTrack.MODE_STATIC);
+                    AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, duration * 2, AudioTrack.MODE_STATIC);
                 beepTrack.write(samples, 0, samples.length);
                 beepTrack.play();
                 Thread.sleep(300);
@@ -809,13 +692,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void startMonitoring() {
         if (isMonitoring.get()) return;
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) return;
-        audioRecord = new AudioRecord(selectedAudioSource, SAMPLE_RATE,
-            AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
-        audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, SAMPLE_RATE,
-            AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
-            BUFFER_SIZE, AudioTrack.MODE_STREAM);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return;
+        audioRecord = new AudioRecord(selectedAudioSource, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
+        audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE, AudioTrack.MODE_STREAM);
         isMonitoring.set(true);
         audioRecord.startRecording();
         audioTrack.play();
@@ -836,43 +715,29 @@ public class MainActivity extends AppCompatActivity {
     private void startCamera() {
         ProcessCameraProvider.getInstance(this).addListener(() -> {
             try {
-                ProcessCameraProvider cameraProvider = ProcessCameraProvider.getInstance(this).get();
+                ProcessCameraProvider cp = ProcessCameraProvider.getInstance(this).get();
                 Preview preview = new Preview.Builder().build();
                 preview.setSurfaceProvider(cameraPreview.getSurfaceProvider());
-                Recorder recorder = new Recorder.Builder()
-                    .setQualitySelector(QualitySelector.from(Quality.HD)).build();
+                Recorder recorder = new Recorder.Builder().setQualitySelector(QualitySelector.from(Quality.HD)).build();
                 videoCapture = VideoCapture.withOutput(recorder);
-                CameraSelector cameraSelector = useFrontCamera ?
-                    CameraSelector.DEFAULT_FRONT_CAMERA :
-                    CameraSelector.DEFAULT_BACK_CAMERA;
-                cameraProvider.unbindAll();
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, videoCapture);
-            } catch (Exception e) {
-                tvRecordStatus.setText("Erro câmera: " + e.getMessage());
-            }
+                CameraSelector cs = useFrontCamera ? CameraSelector.DEFAULT_FRONT_CAMERA : CameraSelector.DEFAULT_BACK_CAMERA;
+                cp.unbindAll();
+                cp.bindToLifecycle(this, cs, preview, videoCapture);
+            } catch (Exception e) { tvRecordStatus.setText("Erro câmera: " + e.getMessage()); }
         }, ContextCompat.getMainExecutor(this));
     }
 
     private void startRecording() {
-        if (videoCapture == null) {
-            Toast.makeText(this, "Câmera não iniciada!", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (videoCapture == null) { Toast.makeText(this, "Câmera não iniciada!", Toast.LENGTH_SHORT).show(); return; }
         ContentValues values = new ContentValues();
         values.put(MediaStore.Video.Media.DISPLAY_NAME, "soundmix_" + System.currentTimeMillis() + ".mp4");
         values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
         values.put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/SoundMix");
-        MediaStoreOutputOptions options = new MediaStoreOutputOptions.Builder(
-            getContentResolver(), MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
-            .setContentValues(values).build();
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "Permissão de áudio necessária!", Toast.LENGTH_SHORT).show();
-            return;
+        MediaStoreOutputOptions options = new MediaStoreOutputOptions.Builder(getContentResolver(), MediaStore.Video.Media.EXTERNAL_CONTENT_URI).setContentValues(values).build();
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Permissão de áudio necessária!", Toast.LENGTH_SHORT).show(); return;
         }
-        currentRecording = videoCapture.getOutput()
-            .prepareRecording(this, options)
-            .withAudioEnabled()
+        currentRecording = videoCapture.getOutput().prepareRecording(this, options).withAudioEnabled()
             .start(ContextCompat.getMainExecutor(this), event -> {
                 if (event instanceof VideoRecordEvent.Start) {
                     isRecording = true;
@@ -883,16 +748,10 @@ public class MainActivity extends AppCompatActivity {
                     startBackingTrack();
                     if (switchMonitor.isChecked()) startMonitoring();
                 } else if (event instanceof VideoRecordEvent.Finalize) {
-                    VideoRecordEvent.Finalize finalize = (VideoRecordEvent.Finalize) event;
-                    if (!finalize.hasError()) {
-                        lastVideoUri = finalize.getOutputResults().getOutputUri();
-                        tvRecordStatus.setText("✅ Vídeo salvo em Movies/SoundMix!");
-                        btnExportVideo.setVisibility(View.VISIBLE);
-                    } else {
-                        tvRecordStatus.setText("Erro: " + finalize.getError());
-                    }
-                    isRecording = false;
-                    stopMonitoring();
+                    VideoRecordEvent.Finalize fin = (VideoRecordEvent.Finalize) event;
+                    if (!fin.hasError()) { lastVideoUri = fin.getOutputResults().getOutputUri(); tvRecordStatus.setText("✅ Vídeo salvo em Movies/SoundMix!"); btnExportVideo.setVisibility(View.VISIBLE); }
+                    else tvRecordStatus.setText("Erro: " + fin.getError());
+                    isRecording = false; stopMonitoring();
                     btnRecord.setText("⏺️ INICIAR GRAVAÇÃO");
                     btnRecord.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFF44336));
                     btnFlipCamera.setEnabled(true);
@@ -918,9 +777,7 @@ public class MainActivity extends AppCompatActivity {
                 backingPlayer.setVolume(vol, vol);
                 backingPlayer.prepare();
                 backingPlayer.start();
-            } catch (Exception e) {
-                tvRecordStatus.setText("Erro backing: " + e.getMessage());
-            }
+            } catch (Exception e) { tvRecordStatus.setText("Erro backing: " + e.getMessage()); }
         }, latencyMs);
     }
 
@@ -928,78 +785,45 @@ public class MainActivity extends AppCompatActivity {
         if (backingPlayer != null) { backingPlayer.stop(); backingPlayer.release(); backingPlayer = null; }
     }
 
-    // ===================== TESTE DE LATÊNCIA =====================
+    // ===================== LATÊNCIA =====================
 
     private void runDifferentialLatencyTest() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "Permissão de áudio necessária!", Toast.LENGTH_SHORT).show();
-            return;
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Permissão de áudio necessária!", Toast.LENGTH_SHORT).show(); return;
         }
-        tvLatencyTest.setText("🔬 Iniciando teste diferencial...");
+        tvLatencyTest.setText("🔬 Iniciando teste...");
         btnLatencyTest.setEnabled(false);
         new Thread(() -> {
             try {
                 int sr = 44100;
-                int bufSize = AudioRecord.getMinBufferSize(sr,
-                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT) * 4;
-                AudioRecord recAndroid = new AudioRecord(MediaRecorder.AudioSource.MIC, sr,
-                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
-                AudioRecord recSelected = new AudioRecord(selectedAudioSource, sr,
-                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
-                AudioTrack player = new AudioTrack(AudioManager.STREAM_MUSIC, sr,
-                    AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
-                    bufSize, AudioTrack.MODE_STREAM);
+                int bufSize = AudioRecord.getMinBufferSize(sr, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT) * 4;
+                AudioRecord recA = new AudioRecord(MediaRecorder.AudioSource.MIC, sr, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
+                AudioRecord recS = new AudioRecord(selectedAudioSource, sr, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
+                AudioTrack player = new AudioTrack(AudioManager.STREAM_MUSIC, sr, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
                 short[] beep = new short[sr / 5];
-                for (int i = 0; i < beep.length; i++) {
-                    beep[i] = (short)(Short.MAX_VALUE * 0.8 * Math.sin(2 * Math.PI * 1000 * i / sr));
-                }
-                runOnUiThread(() -> tvLatencyTest.setText("🔬 Aquecendo gravadores..."));
-                recAndroid.startRecording();
-                recSelected.startRecording();
-                Thread.sleep(300);
-                runOnUiThread(() -> tvLatencyTest.setText("🔬 Tocando beep de referência..."));
+                for (int i = 0; i < beep.length; i++) beep[i] = (short)(Short.MAX_VALUE * 0.8 * Math.sin(2 * Math.PI * 1000 * i / sr));
+                recA.startRecording(); recS.startRecording(); Thread.sleep(300);
                 player.play();
-                long beepStartTime = System.currentTimeMillis();
+                long beepStart = System.currentTimeMillis();
                 player.write(beep, 0, beep.length);
-                short[] bufAndroid = new short[bufSize];
-                short[] bufSelected = new short[bufSize];
-                long detectedAndroid = -1, detectedSelected = -1;
-                long timeout = System.currentTimeMillis() + 3000;
+                short[] bA = new short[bufSize], bS = new short[bufSize];
+                long dA = -1, dS = -1, timeout = System.currentTimeMillis() + 3000;
                 int threshold = 6000;
                 while (System.currentTimeMillis() < timeout) {
-                    if (detectedAndroid < 0) {
-                        int read = recAndroid.read(bufAndroid, 0, bufAndroid.length);
-                        for (int i = 0; i < read; i++) {
-                            if (Math.abs(bufAndroid[i]) > threshold) { detectedAndroid = System.currentTimeMillis(); break; }
-                        }
-                    }
-                    if (detectedSelected < 0) {
-                        int read = recSelected.read(bufSelected, 0, bufSelected.length);
-                        for (int i = 0; i < read; i++) {
-                            if (Math.abs(bufSelected[i]) > threshold) { detectedSelected = System.currentTimeMillis(); break; }
-                        }
-                    }
-                    if (detectedAndroid > 0 && detectedSelected > 0) break;
+                    if (dA < 0) { int r = recA.read(bA, 0, bA.length); for (int i = 0; i < r; i++) if (Math.abs(bA[i]) > threshold) { dA = System.currentTimeMillis(); break; } }
+                    if (dS < 0) { int r = recS.read(bS, 0, bS.length); for (int i = 0; i < r; i++) if (Math.abs(bS[i]) > threshold) { dS = System.currentTimeMillis(); break; } }
+                    if (dA > 0 && dS > 0) break;
                 }
-                recAndroid.stop(); recAndroid.release();
-                recSelected.stop(); recSelected.release();
-                player.stop(); player.release();
-                long fA = detectedAndroid, fS = detectedSelected;
+                recA.stop(); recA.release(); recS.stop(); recS.release(); player.stop(); player.release();
+                long fA = dA, fS = dS;
                 runOnUiThread(() -> {
                     btnLatencyTest.setEnabled(true);
                     if (fA > 0 && fS > 0) {
-                        long latA = fA - beepStartTime, latS = fS - beepStartTime;
-                        long diff = Math.abs(latS - latA);
-                        seekLatency.setProgress((int) diff);
-                        latencyMs = (int) diff;
-                        tvLatency.setText(diff + " ms");
-                        tvLatencyTest.setText("✅ Android: " + latA + "ms | Dispositivo: " + latS + "ms | Diferença: " + diff + "ms");
-                    } else if (fA > 0) {
-                        tvLatencyTest.setText("⚠️ Dispositivo selecionado não detectou sinal.");
-                    } else {
-                        tvLatencyTest.setText("❌ Nenhum sinal detectado. Use fone e tente novamente.");
-                    }
+                        long diff = Math.abs((fS - beepStart) - (fA - beepStart));
+                        seekLatency.setProgress((int) diff); latencyMs = (int) diff; tvLatency.setText(diff + " ms");
+                        tvLatencyTest.setText("✅ Android: " + (fA-beepStart) + "ms | Dispositivo: " + (fS-beepStart) + "ms | Diff: " + diff + "ms");
+                    } else if (fA > 0) tvLatencyTest.setText("⚠️ Dispositivo não detectou sinal.");
+                    else tvLatencyTest.setText("❌ Nenhum sinal detectado.");
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> { tvLatencyTest.setText("Erro: " + e.getMessage()); btnLatencyTest.setEnabled(true); });
@@ -1020,41 +844,23 @@ public class MainActivity extends AppCompatActivity {
     private void requestPermissions() {
         List<String> perms = new ArrayList<>();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
-                    != PackageManager.PERMISSION_GRANTED)
-                perms.add(Manifest.permission.READ_MEDIA_AUDIO);
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VIDEO)
-                    != PackageManager.PERMISSION_GRANTED)
-                perms.add(Manifest.permission.READ_MEDIA_VIDEO);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) perms.add(Manifest.permission.READ_MEDIA_AUDIO);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED) perms.add(Manifest.permission.READ_MEDIA_VIDEO);
         } else {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED)
-                perms.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED)
-                perms.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) perms.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) perms.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED)
-            perms.add(Manifest.permission.CAMERA);
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED)
-            perms.add(Manifest.permission.RECORD_AUDIO);
-        if (!perms.isEmpty())
-            ActivityCompat.requestPermissions(this, perms.toArray(new String[0]), PERM_REQUEST);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) perms.add(Manifest.permission.CAMERA);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) perms.add(Manifest.permission.RECORD_AUDIO);
+        if (!perms.isEmpty()) ActivityCompat.requestPermissions(this, perms.toArray(new String[0]), PERM_REQUEST);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode != Activity.RESULT_OK || data == null) return;
-        if (requestCode == PICK_AUDIO) {
-            selectedAudioUri = data.getData();
-            tvFileName.setText(selectedAudioUri.getLastPathSegment());
-        } else if (requestCode == PICK_BACKING) {
-            backingTrackUri = data.getData();
-            tvBackingName.setText(backingTrackUri.getLastPathSegment());
-        }
+        if (requestCode == PICK_AUDIO) { selectedAudioUri = data.getData(); tvFileName.setText(selectedAudioUri.getLastPathSegment()); }
+        else if (requestCode == PICK_BACKING) { backingTrackUri = data.getData(); tvBackingName.setText(backingTrackUri.getLastPathSegment()); }
     }
 
     @Override
