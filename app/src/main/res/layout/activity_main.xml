@@ -786,8 +786,18 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="⏱️ Latência Bluetooth (ms)"
+                android:text="🎧 Offset de Monitoramento"
                 android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:layout_marginBottom="2dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="-2500ms ◀──────────── 0 ────────────▶ +2500ms"
+                android:textColor="#AAAAAA"
+                android:textSize="11sp"
+                android:gravity="center"
                 android:layout_marginBottom="4dp"/>
 
             <SeekBar
@@ -795,7 +805,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:max="5000"
-                android:progress="0"
+                android:progress="2500"
+                android:progressTint="#BB86FC"
+                android:thumbTint="#BB86FC"
                 android:layout_marginBottom="4dp"/>
 
             <TextView
@@ -803,9 +815,21 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="0 ms"
-                android:textColor="#AAAAAA"
+                android:textColor="#BB86FC"
+                android:textStyle="bold"
                 android:gravity="center"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="4dp"/>
+
+            <!-- Confirmador visual do offset aplicado -->
+            <TextView
+                android:id="@+id/tvOffsetConfirm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#1DB954"
+                android:gravity="center"
+                android:textSize="13sp"
+                android:layout_marginBottom="12dp"/>
 
             <Button
                 android:id="@+id/btnLatencyTest"
