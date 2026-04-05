@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
     private TabLayout tabLayout;
     private View scrollStemSeparator, scrollVideoMix;
     private Button btnSelectBacking, btnRecord, btnExportVideo, btnFlipCamera, btnLatencyTest;
-    private TextView tvBackingName, tvRecordStatus, tvLatency, tvLatencyTest;
+    private TextView tvBackingName, tvRecordStatus, tvLatency, tvLatencyTest, tvOffsetConfirm;
     private SeekBar seekBackingVolume, seekLatency;
     private PreviewView cameraPreview;
     private SwitchCompat switchMonitor;
@@ -112,7 +112,8 @@ public class MainActivity extends AppCompatActivity {
     private ExecutorService cameraExecutor;
     private boolean isRecording = false;
     private Uri lastVideoUri;
-    private int latencyMs = 0;
+    private int latencyMs = 0;        // offset real em ms (-2500 a +2500)
+    private TextView tvOffsetConfirm;  // confirmador visual do offset
     private boolean useFrontCamera = false;
     private AtomicBoolean isMonitoring = new AtomicBoolean(false);
     private AudioRecord audioRecord;
@@ -179,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
         tvRecordStatus    = findViewById(R.id.tvRecordStatus);
         tvLatency         = findViewById(R.id.tvLatency);
         tvLatencyTest     = findViewById(R.id.tvLatencyTest);
+        tvOffsetConfirm   = findViewById(R.id.tvOffsetConfirm);
         seekBackingVolume = findViewById(R.id.seekBackingVolume);
         seekLatency       = findViewById(R.id.seekLatency);
         cameraPreview     = findViewById(R.id.cameraPreview);
@@ -253,7 +255,16 @@ public class MainActivity extends AppCompatActivity {
             else if (checkedId == R.id.radioMicOTG) { selectedAudioSource = MediaRecorder.AudioSource.MIC; tvLatencyTest.setText("🎛️ OTG selecionado"); }
         });
         seekLatency.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            public void onProgressChanged(SeekBar s, int p, boolean fromUser) { latencyMs = p; tvLatency.setText(p + " ms"); }
+            public void onProgressChanged(SeekBar s, int p, boolean fromUser) {
+                latencyMs = p - 2500; // centralizado: 0-2500 = negativo, 2500-5000 = positivo
+                String sinal = latencyMs > 0 ? "+" : "";
+                tvLatency.setText(sinal + latencyMs + " ms");
+                if (latencyMs == 0) {
+                    tvOffsetConfirm.setText("✅ Sem offset aplicado");
+                } else {
+                    tvOffsetConfirm.setText("✅ Offset aplicado: " + sinal + latencyMs + "ms");
+                }
+            }
             public void onStartTrackingTouch(SeekBar s) {}
             public void onStopTrackingTouch(SeekBar s) {}
         });
@@ -656,8 +667,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startFinalCountdown() {
-        playBeep();
-        if (switchMonitor.isChecked()) startMonitoring(); // mantém monitor na contagem regressiva
+        playBeep(); // beep 880Hz avisa que gravação vai começar
+        if (switchMonitor.isChecked() && !isMonitoring.get()) startMonitoring();
         countDownTimer = new CountDownTimer(5000, 1000) {
             public void onTick(long ms) { tvRecordStatus.setText("🔴 Gravando em " + (ms/1000+1) + "s..."); }
             public void onFinish() { isPreparing = false; startRecording(); }
@@ -747,11 +758,26 @@ public class MainActivity extends AppCompatActivity {
                     isRecording = true;
                     btnRecord.setText("⏹️ PARAR GRAVAÇÃO");
                     btnRecord.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF607D8B));
-                    tvRecordStatus.setText("🔴 Gravando...");
                     btnFlipCamera.setEnabled(false);
-                    startBackingTrack();
-                    // monitor já pode estar ativo desde o Treine! — só liga se ainda não estiver
                     if (switchMonitor.isChecked() && !isMonitoring.get()) startMonitoring();
+
+                    // 5s de vídeo gravando em silêncio como régua de referência
+                    tvRecordStatus.setText("🔴 Gravando... (régua 5s)");
+                    new CountDownTimer(5000, 1000) {
+                        public void onTick(long ms) {
+                            tvRecordStatus.setText("🔴 " + (ms/1000+1) + "s — Gravação de vídeo como régua para organização e edição de tempos no seu editor");
+                        }
+                        public void onFinish() {
+                            // Beep NÃO gravável — avisa que backing track vai entrar
+                            playBeepBacking();
+                            // Backing track entra após o beep (~500ms)
+                            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                                startBackingTrack();
+                                tvRecordStatus.setText("🔴 Gravando... 🎵 Backing ativa!");
+                            }, 500);
+                        }
+                    }.start();
+
                 } else if (event instanceof VideoRecordEvent.Finalize) {
                     VideoRecordEvent.Finalize fin = (VideoRecordEvent.Finalize) event;
                     if (!fin.hasError()) { lastVideoUri = fin.getOutputResults().getOutputUri(); tvRecordStatus.setText("✅ Vídeo salvo em Movies/SoundMix!"); btnExportVideo.setVisibility(View.VISIBLE); }
@@ -764,6 +790,26 @@ public class MainActivity extends AppCompatActivity {
             });
     }
 
+    // Beep NÃO gravável — tom diferente (1200Hz) pra avisar entrada da backing track
+    private void playBeepBacking() {
+        new Thread(() -> {
+            try {
+                int sr = 44100, duration = sr / 3; // ~333ms
+                short[] samples = new short[duration];
+                for (int i = 0; i < duration; i++)
+                    samples[i] = (short)(Short.MAX_VALUE * Math.sin(2 * Math.PI * 1200 * i / sr));
+                AudioTrack beepTrack = new AudioTrack(AudioManager.STREAM_MUSIC, sr,
+                    AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
+                    duration * 2, AudioTrack.MODE_STATIC);
+                beepTrack.write(samples, 0, samples.length);
+                beepTrack.play();
+                Thread.sleep(400);
+                beepTrack.stop();
+                beepTrack.release();
+            } catch (Exception e) {}
+        }).start();
+    }
+
     private void stopRecording() {
         if (currentRecording != null) { currentRecording.stop(); currentRecording = null; }
         stopBackingTrack();
@@ -772,6 +818,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void startBackingTrack() {
         if (backingTrackUri == null) return;
+        long delay = Math.max(0, latencyMs); // só atrasa se offset positivo
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             try {
                 if (backingPlayer != null) backingPlayer.release();
@@ -782,8 +829,10 @@ public class MainActivity extends AppCompatActivity {
                 backingPlayer.setVolume(vol, vol);
                 backingPlayer.prepare();
                 backingPlayer.start();
+                // Se offset negativo, adianta a posição da backing track
+                if (latencyMs < 0) backingPlayer.seekTo(Math.abs(latencyMs));
             } catch (Exception e) { tvRecordStatus.setText("Erro backing: " + e.getMessage()); }
-        }, latencyMs);
+        }, delay);
     }
 
     private void stopBackingTrack() {
@@ -827,7 +876,8 @@ public class MainActivity extends AppCompatActivity {
                     btnLatencyTest.setEnabled(true);
                     if (fA > 0 && fS > 0) {
                         long diff = Math.abs((fS - beepStart) - (fA - beepStart));
-                        seekLatency.setProgress((int) diff); latencyMs = (int) diff; tvLatency.setText(diff + " ms");
+                        seekLatency.setProgress((int) diff + 2500); latencyMs = (int) diff; tvLatency.setText("+" + diff + " ms");
+                        tvOffsetConfirm.setText("✅ Offset aplicado: +" + diff + "ms");
                         tvLatencyTest.setText("✅ Android: " + (fA-beepStart) + "ms | Dispositivo: " + (fS-beepStart) + "ms | Diff: " + diff + "ms");
                     } else if (fA > 0) tvLatencyTest.setText("⚠️ Dispositivo não detectou sinal.");
                     else tvLatencyTest.setText("❌ Nenhum sinal detectado.");
