@@ -113,7 +113,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean isRecording = false;
     private Uri lastVideoUri;
     private int latencyMs = 0;        // offset real em ms (-2500 a +2500)
-    private TextView tvOffsetConfirm;  // confirmador visual do offset
     private boolean useFrontCamera = false;
     private AtomicBoolean isMonitoring = new AtomicBoolean(false);
     private AudioRecord audioRecord;
